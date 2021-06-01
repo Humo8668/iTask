@@ -3,4 +3,25 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
          version="4.0">
+
+    <context-param>
+        <param-name>DB_USERNAME</param-name>
+        <param-value>main_admin</param-value>
+    </context-param>
+    <context-param>
+        <param-name>DB_PASSWORD</param-name>
+        <param-value>123</param-value>
+    </context-param>
+    <context-param>
+        <param-name>DB_STRING</param-name>
+        <param-value>jdbc:postgresql://localhost/iTask</param-value>
+    </context-param>
+
+
+    <listener>
+        <listener-class>uz.app.iTask.Util.Setup</listener-class>
+    </listener>
+    <listener>
+        <listener-class>uz.app.Anno.Global</listener-class>
+    </listener>
 </web-app>

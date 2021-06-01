@@ -1,5 +1,7 @@
 package uz.app.iTask.Models;
 
+import uz.app.Anno.BaseEntity;
+
 import java.util.Date;
 
 public class Role extends BaseEntity {

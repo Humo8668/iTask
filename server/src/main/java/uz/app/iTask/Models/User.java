@@ -1,12 +1,13 @@
 package uz.app.iTask.Models;
 
-import uz.app.iTask.Annotations.Column;
-import uz.app.iTask.Annotations.Schema;
-import uz.app.iTask.Annotations.Table;
+import uz.app.Anno.Annotations.Column;
+import uz.app.Anno.Annotations.Schema;
+import uz.app.Anno.Annotations.Table;
+import uz.app.Anno.BaseEntity;
 
 @Schema("public")
 @Table("Users")
-public class User extends BaseEntity{
+public class User extends BaseEntity {
     @Column("id")
     private long id;
     @Column("login")

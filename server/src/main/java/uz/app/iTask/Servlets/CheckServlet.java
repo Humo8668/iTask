@@ -1,11 +1,11 @@
 package uz.app.iTask.Servlets;
 
+import uz.app.Anno.BaseServlet;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -21,7 +21,6 @@ public class CheckServlet extends BaseServlet {
         } catch (java.io.IOException ex){
             res.sendError(500, "ERROR");
         }*/
-
     }
 
 }

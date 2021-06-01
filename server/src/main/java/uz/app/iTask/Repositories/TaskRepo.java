@@ -1,8 +1,9 @@
 package uz.app.iTask.Repositories;
 
+import uz.app.Anno.Repository;
 import uz.app.iTask.Models.Task;
 
-public class TaskRepo extends Repository<Task>{
+public class TaskRepo extends Repository<Task> {
     public Task[] getAll() {
         return new Task[0];
     }

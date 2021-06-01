@@ -1,5 +1,7 @@
 package uz.app.iTask.Models;
 
+import uz.app.Anno.BaseEntity;
+
 public class Task extends BaseEntity {
     private long id;
     private String title;
