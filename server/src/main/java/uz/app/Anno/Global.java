@@ -23,7 +23,6 @@ public class Global implements ServletContextListener {
         DB_STRING = ctx.getInitParameter("DB_STRING");
         DB_USERNAME = ctx.getInitParameter("DB_USERNAME");
         DB_PASSWORD = ctx.getInitParameter("DB_PASSWORD");
-
         try {
             Anno.Init();
             Database.Init();

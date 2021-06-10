@@ -14,13 +14,20 @@ import java.util.LinkedList;
 public abstract class Repository<T extends BaseEntity> {
     protected String TABLE_NAME = "";
     protected String SCHEMA_NAME = "public";
-    private Annotation[] Annotations = null;
     private Constructor constructor = null;
     protected Class<T> ClassRef;
+    protected Field idField;
+
     protected String getTableFullName()
     {
         return this.SCHEMA_NAME + ".\"" + this.TABLE_NAME + "\"";
     }
+
+    protected String getIdColumnName()
+    {
+        return Anno.getColumnName(idField);
+    }
+
 
     protected void Init(Class<T> cl) throws Exception
     {
@@ -42,7 +49,7 @@ public abstract class Repository<T extends BaseEntity> {
 
         this.SCHEMA_NAME = cl.getAnnotation(Schema.class).value();
         this.TABLE_NAME = cl.getAnnotation(Table.class).value();
-        this.Annotations = cl.getAnnotations();
+        this.idField = Anno.getIdField(cl);
     }
 
     public T[] getAll() throws Exception
@@ -70,13 +77,62 @@ public abstract class Repository<T extends BaseEntity> {
             res[i] = e;
             i++;
         }
-
+        try {
+            Database.close(connection);
+        } catch (Exception ex) {
+            Database.toTrash(connection);
+        }
         return entities.toArray(res);
     };
 
-    public abstract T getById(long id) throws Exception;
+    public T getById(long id) throws Exception
+    {
+        Connection connection = Database.getConnection();
+        if(connection == null)
+            throw new Exception("Couldn't connect to database.");
 
-    public abstract boolean save(T entity) throws Exception;
+        T entity;
+        PreparedStatement stmt = connection.prepareStatement("SELECT * FROM " + getTableFullName() + " WHERE " + getIdColumnName() + " = ?");
+        stmt.setLong(1, id);
+        ResultSet rs = stmt.executeQuery();
+        ResultSetMetaData rsmd = rs.getMetaData();
+
+        if(rs.next())   // If row exists
+            entity = this.makeObject(rs, rsmd);
+        else
+            entity = null;
+
+        try {
+            Database.close(connection);
+        } catch (Exception ex) {
+            Database.toTrash(connection);
+        }
+        return entity;
+    }
+
+    public boolean save(T entity) throws Exception
+    {
+        Connection connection = Database.getConnection();
+        if(connection == null)
+            throw new Exception("Couldn't connect to database.");
+
+        String SqlQuery = "INSERT INTO public.\"Users\" (<FIELDS>) VALUES (<VALUES>);";
+        String fields = "";
+        /*String values
+
+        PreparedStatement stmt = connection.prepareStatement("SELECT * FROM " + getTableFullName() + " WHERE " + getIdColumnName() + " = ?");
+        stmt.setLong(1, id);
+        ResultSet rs = stmt.executeQuery();
+        ResultSetMetaData rsmd = rs.getMetaData();
+
+        if(rs.next())   // If row exists
+            entity = this.makeObject(rs, rsmd);
+        else
+            entity = null;
+
+        Database.close(connection);*/
+        return false;
+    }
 
     public abstract boolean delete(long id) throws Exception;
 

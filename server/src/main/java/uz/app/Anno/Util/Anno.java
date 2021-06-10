@@ -1,9 +1,16 @@
 package uz.app.Anno.Util;
 
 import uz.app.Anno.Annotations.Column;
+import uz.app.Anno.Annotations.Id;
+import uz.app.Anno.Annotations.Table;
+import uz.app.Anno.RouteProcessingService;
 import uz.app.iTask.Repositories.*;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.sql.CallableStatement;
 import java.util.HashMap;
 
 public class Anno {
@@ -14,7 +21,7 @@ public class Anno {
         columnField = new HashMap<Pair<Class, String>, Field>();
 
         try {
-
+            RouteProcessingService.process();
         } catch (Exception ex){
             throw new Exception("Error on initializing global variables: " + ex.getMessage());
         }
@@ -47,6 +54,25 @@ public class Anno {
 
         return null;
     }
+
+    public static Field getIdField(Class objectClass)
+    {
+        //System.out.println("Id field searching started for " + objectClass.getName());
+        Field res = null;
+        Field[] fields = objectClass.getDeclaredFields();
+        //System.out.println("Count = " + fields.length);
+        for (Field field: fields) {
+            //System.out.println("Another field : " + field.getName());
+            if(field.getAnnotation(Id.class) != null)
+            {
+                res = field;
+                //System.out.println(field.getName() + " has <id> annotation");
+                break;
+            }
+        }
+        return res;
+    }
+
 
     /*public static Class getTypeVariable(Class cl, int varIndex)
     {

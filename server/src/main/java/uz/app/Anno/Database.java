@@ -57,13 +57,17 @@ public class Database{
     {
         if(usingConnections.contains(connection))
         {
-            connection.commit();
+            try {
+                connection.commit();
+            } catch (SQLException ex) {}
             usingConnections.remove(connection);
             availConnections.add(connection);
         }
         else if (availConnections.contains(connection))
         {
-            connection.commit();
+            try {
+                connection.commit();
+            } catch (SQLException ex) {}
             connection.close();
         }
         

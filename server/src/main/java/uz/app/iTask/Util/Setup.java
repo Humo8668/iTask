@@ -2,10 +2,8 @@ package uz.app.iTask.Util;
 
 
 import org.slf4j.*;
-import uz.app.Anno.Annotations.Schema;
-import uz.app.Anno.Annotations.Table;
-import uz.app.iTask.Models.User;
 import uz.app.iTask.Repositories.*;
+import uz.app.iTask.Services.UsersService;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -33,7 +31,10 @@ public class Setup implements ServletContextListener {
             roleRepo = new RoleRepo();
             deskRepo = new DeskRepo();
             actionLogRepo = new ActionLogRepo();
+
+            ModuleManager.Add("/user", new UsersService());
         } catch (Exception ex) {
+            ex.printStackTrace();
             log.error("Service stopped due to error.");
             throw new RuntimeException("Couldn't initialize app.");
         }
