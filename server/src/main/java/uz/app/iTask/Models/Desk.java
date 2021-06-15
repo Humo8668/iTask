@@ -68,4 +68,9 @@ public class Desk extends BaseEntity {
     public int getOwnerId() {
         return ownerId;
     }
+
+    @Override
+    public boolean isValid() {
+        return true;
+    }
 }

@@ -42,4 +42,9 @@ public class Role extends BaseEntity {
     public Date getUpdateDate() {
         return updateDate;
     }
+
+    @Override
+    public boolean isValid() {
+        return true;
+    }
 }

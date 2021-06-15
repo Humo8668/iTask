@@ -27,9 +27,9 @@ public class UserRepo extends Repository<User> {
         return null;
     }*/
 
-    public boolean save(User entity) {
+    /*public boolean save(User entity) {
         return false;
-    }
+    }*/
 
     public boolean delete(long id) {
         return false;

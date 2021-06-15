@@ -1,15 +1,17 @@
 package uz.app.iTask.Models;
 
-import uz.app.Anno.Annotations.Column;
-import uz.app.Anno.Annotations.Id;
-import uz.app.Anno.Annotations.Schema;
-import uz.app.Anno.Annotations.Table;
+import uz.app.Anno.Annotations.*;
 import uz.app.Anno.BaseEntity;
+import uz.app.Anno.Util.Rgx;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Schema("public")
 @Table("Users")
 public class User extends BaseEntity {
     @Id
+    @Generated
     @Column("id")
     private long id;
     @Column("login")
@@ -34,8 +36,28 @@ public class User extends BaseEntity {
         this.state = state;
     }
 
+    @Override
+    public boolean isValid() {
+        if(!Rgx.isEmail(this.email))
+            return false;
+
+        return true;
+    }
+
     public long getId() {
         return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public String getLogin() {
+        return login;
+    }
+
+    public void setLogin(String login) {
+        this.login = login;
     }
 
     public String getFullName() {
@@ -58,11 +80,15 @@ public class User extends BaseEntity {
         return passwordHash;
     }
 
-    public String getLogin() {
-        return login;
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public String getState() {
         return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
     }
 }

@@ -39,4 +39,9 @@ public class ActionLog extends BaseEntity {
     public Date getActionDate() {
         return actionDate;
     }
+
+    @Override
+    public boolean isValid() {
+        return true;
+    }
 }

@@ -2,6 +2,7 @@ package uz.app.iTask.Util;
 
 
 import org.slf4j.*;
+import uz.app.Anno.RouteProcessingService;
 import uz.app.iTask.Repositories.*;
 import uz.app.iTask.Services.UsersService;
 
@@ -20,7 +21,8 @@ public class Setup implements ServletContextListener {
 
     static final Logger log = LoggerFactory.getLogger(Setup.class);
 
-    public void contextInitialized(ServletContextEvent event) throws RuntimeException {
+    public void contextInitialized(ServletContextEvent event) throws RuntimeException
+    {
         // Do your thing during webapp's startup.
         //log.warn("contextInitialized");
 
@@ -32,15 +34,14 @@ public class Setup implements ServletContextListener {
             deskRepo = new DeskRepo();
             actionLogRepo = new ActionLogRepo();
 
-            ModuleManager.Add("/user", new UsersService());
+            RouteProcessingService.AddModule(new UsersService());
         } catch (Exception ex) {
             ex.printStackTrace();
             log.error("Service stopped due to error.");
             throw new RuntimeException("Couldn't initialize app.");
         }
     }
-    public void contextDestroyed(ServletContextEvent event) {
-        // Do your thing during webapp's shutdown.
-
+    public void contextDestroyed(ServletContextEvent event)
+    {
     }
 }

@@ -48,4 +48,9 @@ public class Task extends BaseEntity {
     public long getId() {
         return id;
     }
+
+    @Override
+    public boolean isValid() {
+        return true;
+    }
 }

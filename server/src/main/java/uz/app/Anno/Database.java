@@ -2,16 +2,47 @@ package uz.app.Anno;
 
 import org.slf4j.*;
 
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.sql.*;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class Database{
-    private static final int POOL_SIZE = 10;
+    private static int POOL_SIZE = 10;
     private static LinkedList<Connection> availConnections = null;
     private static LinkedList<Connection> usingConnections = null;
 
+    public static HashMap<Class, Integer> SqlType;
+
+    void FillSqlTypes()
+    {
+        SqlType = new HashMap<Class, Integer>();
+        SqlType.put(long.class, Types.BIGINT);
+        SqlType.put(Long.class, Types.BIGINT);
+        SqlType.put(byte[].class, Types.BINARY);
+        SqlType.put(Byte[].class, Types.BINARY);
+        SqlType.put(boolean.class, Types.BIT);
+        SqlType.put(Boolean.class, Types.BIT);
+        SqlType.put(String.class, Types.CHAR);
+        SqlType.put(java.sql.Date.class, Types.DATE);
+        SqlType.put(java.sql.Timestamp.class, Types.TIMESTAMP);
+        SqlType.put(BigDecimal.class, Types.DECIMAL);
+        SqlType.put(double.class, Types.DOUBLE);
+        SqlType.put(Double.class, Types.DOUBLE);
+        SqlType.put(Long.TYPE, Types.BIGINT);
+        SqlType.put(Long.TYPE, Types.BIGINT);
+
+    }
+
+
     public static void Init() throws Exception
     {
+        try {
+            POOL_SIZE = Integer.parseInt(Global.DB_CONN_POOL_SIZE);
+        } catch (NumberFormatException ex) {
+            POOL_SIZE = 10;
+        }
         availConnections = new LinkedList<Connection>();
         usingConnections = new LinkedList<Connection>();
 
@@ -27,6 +58,8 @@ public class Database{
             }
             availConnections.add(connection);
         }
+
+
 
         return;
     }
@@ -70,7 +103,7 @@ public class Database{
             } catch (SQLException ex) {}
             connection.close();
         }
-        
+
         return;
     }
 

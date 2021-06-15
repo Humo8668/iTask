@@ -1,6 +1,8 @@
 package uz.app.Anno;
 
 
+import uz.app.Anno.Util.HttpMethod;
+
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -17,22 +19,25 @@ public class MainServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
-        super.doGet(req, resp);
+        System.out.println(req.getPathInfo());
+        RouteProcessingService.process(req.getPathInfo(), HttpMethod.GET, req, resp);
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doPost(req, resp);
+        System.out.println(req.getPathInfo());
+        RouteProcessingService.process(req.getPathInfo(), HttpMethod.POST, req, resp);
     }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doPut(req, resp);
+        System.out.println(req.getPathInfo());
+        RouteProcessingService.process(req.getPathInfo(), HttpMethod.PUT, req, resp);
     }
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doDelete(req, resp);
+        System.out.println(req.getPathInfo());
+        RouteProcessingService.process(req.getPathInfo(), HttpMethod.DELETE, req, resp);
     }
 }
