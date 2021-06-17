@@ -7,13 +7,13 @@ import uz.app.Anno.Util.Anno;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.sql.*;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-public abstract class Repository<T extends BaseEntity> {
+public class Repository<T extends BaseEntity> {
     protected String TABLE_NAME = "";
     protected String SCHEMA_NAME = "public";
 
@@ -35,6 +35,7 @@ public abstract class Repository<T extends BaseEntity> {
     {
         return Anno.getColumnName(idField);
     }
+
 
     /**
      * Refreshes table information for every mapping class fields
@@ -61,9 +62,6 @@ public abstract class Repository<T extends BaseEntity> {
             rs = metadata.getColumns(null, SCHEMA_NAME, TABLE_NAME, "%");
             while(rs.next()) {
                 colName.put(rs.getInt("ORDINAL_POSITION"), rs.getString("COLUMN_NAME"));
-                /*System.out.println(rs.getString("COLUMN_NAME") + " "
-                        + rs.getString("TYPE_NAME") + " "
-                        + rs.getString("COLUMN_SIZE"));*/
             }
         } catch (SQLException ex) {
             return; // Couldn't connect to database. Refreshing stopped.
@@ -140,6 +138,19 @@ public abstract class Repository<T extends BaseEntity> {
         gatherTableData();
     }
 
+    public <E extends T> Repository(Class<T> forClass)
+    {
+        try {
+            this.Init(forClass);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public <E extends T> Repository()
+    {
+    }
+
     public T[] getAll() throws Exception
     {
         Connection connection = Database.getConnection();
@@ -207,8 +218,6 @@ public abstract class Repository<T extends BaseEntity> {
         if(entity == null)
             return false;
 
-
-
         for (Field field : entityFields)
         {
             field.setAccessible(true);
@@ -228,7 +237,7 @@ public abstract class Repository<T extends BaseEntity> {
 
         PreparedStatement stmt = connection.prepareStatement(SqlQuery.toString());
 
-        Class type;
+        Integer SqlType;
         int index = 1;
         for (Field field : entityFields)
         {
@@ -236,15 +245,17 @@ public abstract class Repository<T extends BaseEntity> {
                 continue;
 
             field.setAccessible(true);
-            type = field.getType();
+            Object value = field.get(entity);
+            if(fieldSqlTypes.containsKey(field)) // if column type info exists
+            {
+                SqlType = fieldSqlTypes.get(field);
+                stmt.setObject(index, value, SqlType);
+            } else
+            {
+                stmt.setObject(index,value);
+            }
 
-            stmt.setObject(index, field.get(entity),Types.INTEGER);
-
-
-
-            /*if(field.get(entity) == null)
-                stmt.setNull(index,);
-            else*/ if(type.equals(Integer.TYPE))
+            /*if(type.equals(Integer.TYPE))
                 stmt.setInt(index, field.getInt(entity));
             else if(type.equals(Long.TYPE))
                 stmt.setLong(index, field.getLong(entity));
@@ -259,9 +270,7 @@ public abstract class Repository<T extends BaseEntity> {
             else if(type.equals(Date.class))
                 stmt.setDate(index, java.sql.Date.valueOf(field.get(entity).toString()) );
             else
-                stmt.setObject(index, field.get(entity));
-
-
+                stmt.setObject(index, field.get(entity));*/
 
             index++;
         }
@@ -273,11 +282,17 @@ public abstract class Repository<T extends BaseEntity> {
         return true;
     }
 
-    public abstract boolean delete(long id) throws Exception;
+    public boolean delete(long id) throws Exception
+    {
+        return false;
+    }
 
-    public abstract long count() throws Exception;
+    public long count() throws Exception
+    {
+        return 0;
+    }
 
-    protected T makeObject(ResultSet rs, ResultSetMetaData rsmd) throws Exception
+    protected final T makeObject(ResultSet rs, ResultSetMetaData rsmd) throws Exception
     {
         Object obj = null;
         obj = constructor.newInstance();    // can throw exception

@@ -20,6 +20,7 @@ public class Anno {
     {
         columnField = new HashMap<Pair<Class, String>, Field>();
 
+
         try {
         } catch (Exception ex){
             throw new Exception("Error on initializing global variables: " + ex.getMessage());

@@ -18,8 +18,6 @@ public class Global implements ServletContextListener {
     public static String DB_CONN_POOL_SIZE = "";
 
     public void contextInitialized(ServletContextEvent event) throws RuntimeException {
-        // Do your thing during webapp's startup.
-
         ServletContext ctx = event.getServletContext(); // Context from web.xml file.
         DB_STRING = ctx.getInitParameter("DB_STRING");
         DB_USERNAME = ctx.getInitParameter("DB_USERNAME");

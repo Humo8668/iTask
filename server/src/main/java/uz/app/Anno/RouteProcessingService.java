@@ -21,13 +21,6 @@ public class RouteProcessingService {
     protected static HashMap<Pair<String, HttpMethod>, Pair<BaseModule, Method>> RouteHashing =
             new HashMap<Pair<String, HttpMethod>, Pair<BaseModule, Method>>();
 
-    public static boolean isValidPath(String path)
-    {
-        Pattern pattern = Pattern.compile("^([\\/]([\\w])*)*$", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(path);
-        return matcher.matches();
-    }
-
     public static void AddModule(BaseModule module) throws Exception
     {
         Class<? extends BaseModule> moduleClass = module.getClass();

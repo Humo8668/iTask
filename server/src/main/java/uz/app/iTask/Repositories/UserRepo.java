@@ -9,13 +9,9 @@ import uz.app.iTask.Util.Setup;
 public class UserRepo extends Repository<User> {
     static final Logger log = LoggerFactory.getLogger(UserRepo.class);
 
-    public UserRepo() throws Exception
+    public UserRepo()
     {
-        try {
-            this.Init(User.class);    // Must be here
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+
     }
 
 
