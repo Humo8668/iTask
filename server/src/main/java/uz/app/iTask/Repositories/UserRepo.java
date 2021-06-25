@@ -11,7 +11,7 @@ public class UserRepo extends Repository<User> {
 
     public UserRepo()
     {
-
+        SetTargetEntity(User.class);
     }
 
 
@@ -27,11 +27,11 @@ public class UserRepo extends Repository<User> {
         return false;
     }*/
 
-    public boolean delete(long id) {
+    /*public boolean delete(long id) {
         return false;
-    }
+    }*/
 
-    public long count() {
+    /*public long count() {
         return 0;
-    }
+    }*/
 }

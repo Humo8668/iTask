@@ -11,6 +11,8 @@ public class Role extends BaseEntity {
     private Date createDate;
     private Date updateDate;
 
+    public Role() {};
+
     public Role(int id, String name, int createdBy, Date createDate, Date updateDate) {
         this.id = id;
         this.name = name;

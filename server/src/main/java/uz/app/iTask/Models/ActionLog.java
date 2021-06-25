@@ -12,6 +12,8 @@ public class ActionLog extends BaseEntity {
     private int subjectId;      // Id of subject upon that action was performed;
     private Date actionDate;
 
+    public ActionLog() {}
+
     public ActionLog(int id, int userId, int actionId, int subjectId, Date actionDate) {
         this.id = id;
         this.userId = userId;

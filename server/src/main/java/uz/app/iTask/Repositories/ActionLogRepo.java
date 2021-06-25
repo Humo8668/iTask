@@ -3,7 +3,12 @@ package uz.app.iTask.Repositories;
 import uz.app.Anno.Repository;
 import uz.app.iTask.Models.ActionLog;
 
-public class ActionLogRepo extends Repository<ActionLog> {
+public class ActionLogRepo /*extends Repository<ActionLog>*/ {
+    public ActionLogRepo()
+    {
+        //SetTargetEntity(ActionLog.class);
+    }
+
     public ActionLog[] getAll() {
         return new ActionLog[0];
     }

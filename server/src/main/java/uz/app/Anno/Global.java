@@ -11,27 +11,28 @@ import javax.servlet.ServletContextListener;
 import java.io.*;
 import java.util.Properties;
 
-public class Global implements ServletContextListener {
+public class Global {
     public static String DB_STRING = "";
     public static String DB_USERNAME = "";
     public static String DB_PASSWORD = "";
     public static String DB_CONN_POOL_SIZE = "";
 
-    public void contextInitialized(ServletContextEvent event) throws RuntimeException {
-        ServletContext ctx = event.getServletContext(); // Context from web.xml file.
+    public static boolean isInit = false;
+
+    public static void Init(ServletContext ctx) throws Exception {
         DB_STRING = ctx.getInitParameter("DB_STRING");
         DB_USERNAME = ctx.getInitParameter("DB_USERNAME");
         DB_PASSWORD = ctx.getInitParameter("DB_PASSWORD");
         DB_CONN_POOL_SIZE = ctx.getInitParameter("DB_CONN_POOL_SIZE");
         System.out.println("DB_CONN_POOL_SIZE = " + DB_CONN_POOL_SIZE);
-        try {
-            Anno.Init();
-            Database.Init();
-        } catch (Exception ex) {
-            throw new RuntimeException("Couldn't initialize app.");
+
+        Database.Init();
+        Anno.Init();
+
+        for (Repository repo: Repository.Instances) {
+            repo.Init();
         }
-    }
-    public void contextDestroyed(ServletContextEvent event) {
+        isInit = true;
 
     }
 }

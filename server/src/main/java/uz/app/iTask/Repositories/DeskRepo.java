@@ -3,7 +3,12 @@ package uz.app.iTask.Repositories;
 import uz.app.Anno.Repository;
 import uz.app.iTask.Models.Desk;
 
-public class DeskRepo extends Repository<Desk> {
+public class DeskRepo /*extends Repository<Desk>*/ {
+    public DeskRepo()
+    {
+        //SetTargetEntity(Desk.class);
+    }
+
     public Desk[] getAll() {
         return new Desk[0];
     }

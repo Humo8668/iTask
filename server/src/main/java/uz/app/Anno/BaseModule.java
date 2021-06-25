@@ -13,13 +13,14 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 public abstract class BaseModule {
     protected String moduleName;
 
-    public void Init() throws Exception
+    public String getReqBody(HttpServletRequest req) throws IOException
     {
-
+        return req.getReader().lines().collect(Collectors.joining());
     }
 
     @Override

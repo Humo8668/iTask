@@ -3,32 +3,33 @@ package uz.app.Anno.Util;
 import uz.app.Anno.Annotations.Column;
 import uz.app.Anno.Annotations.Id;
 import uz.app.Anno.Annotations.Table;
+import uz.app.Anno.Database;
+import uz.app.Anno.Global;
+import uz.app.Anno.Repository;
 import uz.app.Anno.RouteProcessingService;
 import uz.app.iTask.Repositories.*;
 
+import javax.servlet.ServletContext;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.CallableStatement;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 public class Anno {
+    private static HashMap<Pair<Class, String>, Field> columnField;     // <EntityClass, ColumnName, FieldInClass>
 
-    private static HashMap<Pair<Class, String>, Field> columnField;
     public static void Init() throws Exception
     {
         columnField = new HashMap<Pair<Class, String>, Field>();
-
-
-        try {
-        } catch (Exception ex){
-            throw new Exception("Error on initializing global variables: " + ex.getMessage());
-        }
     }
 
     public static String getColumnName(Field field)
     {
+        if(field == null)
+            return "";
         return field.getAnnotation(Column.class).value();
     }
 

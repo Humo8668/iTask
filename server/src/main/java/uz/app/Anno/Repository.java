@@ -4,25 +4,35 @@ import uz.app.Anno.Annotations.Schema;
 import uz.app.Anno.Annotations.Table;
 import uz.app.Anno.Util.Anno;
 
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Repository<T extends BaseEntity> {
+    public static LinkedList<Repository> Instances;
+
+    static {
+        Instances = new LinkedList<>();
+    }
+
     protected String TABLE_NAME = "";
     protected String SCHEMA_NAME = "public";
 
-    protected Class<T> ClassRef;
+    protected Class<T> ClassRef = null;
     protected Field idField;
-    protected LinkedList<Field> generatedFields;
-    protected LinkedList<Field> autoincrementFields;
-    protected HashMap<Field, Integer> fieldSqlTypes;
-    protected HashMap<String, Field> columnField;
+    protected LinkedList<Field> GeneratedFields;        // List of entity class's fields that correspond generated column
+    protected LinkedList<Field> AutoincrementFields;    // List of entity class's fields that correspond autoincrement column
+    protected HashMap<Field, Integer> FieldSqlTypes;    // <Field of entity's class, Corresponding SQL type>
+    protected HashMap<String, Field> ColumnField;       // <Column name, Entity's field>
+    protected LinkedList<Field> NullableFields;
     protected Field[] entityFields;
     private Constructor constructor = null;
 
@@ -36,6 +46,17 @@ public class Repository<T extends BaseEntity> {
         return Anno.getColumnName(idField);
     }
 
+    public Repository()
+    {
+        Instances.add(this);
+
+        FieldSqlTypes = new HashMap<Field, Integer>();
+        ColumnField = new HashMap<String, Field>();
+        AutoincrementFields = new LinkedList<Field>();
+        GeneratedFields = new LinkedList<Field>();
+        NullableFields = new LinkedList<Field>();
+        entityFields = new Field[0];
+    }
 
     /**
      * Refreshes table information for every mapping class fields
@@ -45,12 +66,6 @@ public class Repository<T extends BaseEntity> {
         Connection conn;
         DatabaseMetaData metadata;
         ResultSet rs;
-
-        fieldSqlTypes = new HashMap<Field, Integer>();
-        columnField = new HashMap<String, Field>();
-        autoincrementFields = new LinkedList<Field>();
-        generatedFields = new LinkedList<Field>();
-        entityFields = null;
 
         HashMap<Integer, String> colName = new HashMap<Integer, String>();
         HashMap<Integer, Field> colField = new HashMap<Integer, Field>();
@@ -87,7 +102,7 @@ public class Repository<T extends BaseEntity> {
 
         // ===== And then, match column names to class fields
         for (Map.Entry<Integer, String> pair: colName.entrySet()) {
-            columnField.put(pair.getValue(), colField.get(pair.getKey()));
+            ColumnField.put(pair.getValue(), colField.get(pair.getKey()));
         }
 
         // ===== Finally, collect generated and autoincrement columns
@@ -98,12 +113,15 @@ public class Repository<T extends BaseEntity> {
                 Field currField = colField.get(ordinalPosition);
 
                 if(rs.getString("IS_GENERATEDCOLUMN").equals("YES"))
-                    generatedFields.add(colField.get(ordinalPosition));
+                    GeneratedFields.add(colField.get(ordinalPosition));
 
                 if(rs.getString("IS_AUTOINCREMENT").equals("YES"))
-                    autoincrementFields.add(colField.get(ordinalPosition));
+                    AutoincrementFields.add(colField.get(ordinalPosition));
 
-                fieldSqlTypes.put(currField, rs.getInt("DATA_TYPE"));
+                if(rs.getString("IS_NULLABLE").equals("YES"))
+                    NullableFields.add(colField.get(ordinalPosition));
+
+                FieldSqlTypes.put(currField, rs.getInt("DATA_TYPE"));
             }
         } catch (SQLException ex) { //if a database access error occurs; method <beforeFirst()> is called on a closed result set or the result set type is TYPE_FORWARD_ONLY
             return; // Couldn't connect to database. Refreshing stopped.
@@ -111,44 +129,53 @@ public class Repository<T extends BaseEntity> {
 
     }
 
-    protected void Init(Class<T> cl) throws Exception
+    protected void SetTargetEntity(Class<T> cl)
     {
         ClassRef = cl;
-        Constructor ctor = null;
-        Constructor ctors[] = cl.getDeclaredConstructors();
-        for (Constructor c: ctors)
-            if (c.getGenericParameterTypes().length == 0)
-            {
-                ctor = c;
-                break;
-            }
-
-        if(ctor == null)
-            throw new Exception("Error: constructor with no arguments not found. Class name: " + getClass().getName());
-
-        this.constructor = ctor;
-        this.constructor.setAccessible(true);
-
-        this.SCHEMA_NAME = cl.getAnnotation(Schema.class).value();
-        this.TABLE_NAME = cl.getAnnotation(Table.class).value();
-        this.idField = Anno.getIdField(cl);
-
-        entityFields = this.ClassRef.getDeclaredFields();
-
-        gatherTableData();
     }
 
-    public <E extends T> Repository(Class<T> forClass)
+    public void Init() throws Exception
     {
-        try {
-            this.Init(forClass);
-        } catch (Exception ex) {
+        if(ClassRef == null)
+            throw new Exception("Target entity not set for repository");
+        Constructor ctor = null;
+        try{
+            Constructor ctors[] = ClassRef.getDeclaredConstructors();
+            for (Constructor c: ctors)
+                if (c.getGenericParameterTypes().length == 0)
+                {
+                    ctor = c;
+                    break;
+                }
+
+            if(ctor == null)
+                throw new Exception("Error: constructor with no arguments not found. Class name: " + getClass().getName());
+
+            this.constructor = ctor;
+            this.constructor.setAccessible(true);
+
+            Annotation SchemaAnno = ClassRef.getAnnotation(Schema.class);
+            Annotation TableAnno = ClassRef.getAnnotation(Table.class);
+            this.idField = Anno.getIdField(ClassRef);
+
+
+            if(SchemaAnno == null) {
+                throw new NullPointerException("Schema's name must be indicated for entity class <" + ClassRef.getName() + ">");
+            }
+            if(TableAnno == null) {
+                throw new NullPointerException("Table's name must be indicated for entity class <" + ClassRef.getName() + ">");
+            }
+            if(this.idField == null)
+                throw new NullPointerException("Id field must be indicated for entity class <" + ClassRef.getName() + ">");
+
+            this.SCHEMA_NAME = ((Schema) SchemaAnno).value();
+            this.TABLE_NAME = ((Table) TableAnno).value();
+            entityFields = this.ClassRef.getDeclaredFields();
+
+            gatherTableData();
+        } catch(Exception ex) {
             ex.printStackTrace();
         }
-    }
-
-    public <E extends T> Repository()
-    {
     }
 
     public T[] getAll() throws Exception
@@ -176,11 +203,7 @@ public class Repository<T extends BaseEntity> {
             res[i] = e;
             i++;
         }
-        try {
-            Database.close(connection);
-        } catch (Exception ex) {
-            Database.toTrash(connection);
-        }
+        Database.close(connection);
         return entities.toArray(res);
     };
 
@@ -201,21 +224,25 @@ public class Repository<T extends BaseEntity> {
         else
             entity = null;
 
-        try {
+        /*try {
             Database.close(connection);
         } catch (Exception ex) {
             Database.toTrash(connection);
-        }
+        }*/
+        Database.close(connection);
         return entity;
     }
 
-    public boolean save(T entity) throws Exception
+    public boolean save(T entity)
     {
         Connection connection = Database.getConnection();
         if(connection == null)
             throw new Exception("Couldn't connect to database.");
 
         if(entity == null)
+            return false;
+
+        if(!entity.isValid())
             return false;
 
         for (Field field : entityFields)
@@ -235,20 +262,21 @@ public class Repository<T extends BaseEntity> {
         String valuesPlaceholder = getEntityValuePlaceholders();
         SqlQuery.append(getTableFullName()).append(" (").append(fields).append(") VALUES (").append(valuesPlaceholder).append(");");
 
+
         PreparedStatement stmt = connection.prepareStatement(SqlQuery.toString());
 
         Integer SqlType;
         int index = 1;
         for (Field field : entityFields)
         {
-            if(generatedFields.contains(field) || autoincrementFields.contains(field)) // exclude generated and autoincrement fields
+            if(GeneratedFields.contains(field) || AutoincrementFields.contains(field)) // exclude generated and autoincrement fields
                 continue;
 
             field.setAccessible(true);
             Object value = field.get(entity);
-            if(fieldSqlTypes.containsKey(field)) // if column type info exists
+            if(FieldSqlTypes.containsKey(field)) // if column type info exists
             {
-                SqlType = fieldSqlTypes.get(field);
+                SqlType = FieldSqlTypes.get(field);
                 stmt.setObject(index, value, SqlType);
             } else
             {
@@ -275,21 +303,46 @@ public class Repository<T extends BaseEntity> {
             index++;
         }
         int affectedRowsCtn = stmt.executeUpdate();
-
-        if(affectedRowsCtn == 0)
-            return false;
         Database.close(connection);
-        return true;
+
+        return (affectedRowsCtn != 0);
     }
 
     public boolean delete(long id) throws Exception
     {
-        return false;
+        Connection connection = Database.getConnection();
+        if(connection == null)
+            throw new Exception("Couldn't connect to database.");
+
+        System.out.println("Delete requested for id = " + id);
+        PreparedStatement stmt = connection.prepareStatement("DELETE FROM " + getTableFullName() + " WHERE " + getIdColumnName() + " = ?");
+        stmt.setLong(1, id);
+        stmt.executeUpdate();
+
+        Database.close(connection);
+        return true;
     }
 
     public long count() throws Exception
     {
-        return 0;
+        long res = 0;
+        Connection connection = Database.getConnection();
+        if(connection == null)
+            throw new Exception("Couldn't connect to database.");
+
+        PreparedStatement stmt = connection.prepareStatement("SELECT count(*) FROM " + getTableFullName());
+        ResultSet rs = stmt.executeQuery();
+        rs.next();
+        try {
+            res = rs.getInt(1);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw new Exception("Couldn't retrieve result.");
+        } finally {
+            Database.close(connection);
+        }
+
+        return res;
     }
 
     protected final T makeObject(ResultSet rs, ResultSetMetaData rsmd) throws Exception
@@ -356,7 +409,7 @@ public class Repository<T extends BaseEntity> {
         StringBuilder fieldsList = new StringBuilder();
         for (Field field: entityFields)
         {
-            if(generatedFields.contains(field) || autoincrementFields.contains(field)) // exclude generated and autoincrement fields
+            if(GeneratedFields.contains(field) || AutoincrementFields.contains(field)) // exclude generated and autoincrement fields
                 continue;
 
             String columnName = Anno.getColumnName(field);
@@ -373,7 +426,7 @@ public class Repository<T extends BaseEntity> {
         StringBuilder strBld = new StringBuilder();
         for (Field field : entityFields)
         {
-            if(generatedFields.contains(field) || autoincrementFields.contains(field)) // exclude generated and autoincrement fields
+            if(GeneratedFields.contains(field) || AutoincrementFields.contains(field)) // exclude generated and autoincrement fields
                 continue;
             strBld.append("?,");
         }

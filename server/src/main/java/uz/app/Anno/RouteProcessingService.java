@@ -66,13 +66,21 @@ public class RouteProcessingService {
     public static void process(String reqPath, HttpMethod httpMethod, HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException
     {
+        System.out.println("1");
+        if(reqPath == null)
+        {
+            res.sendError(404);
+            return;
+        }
+        System.out.println("2");
         reqPath = reqPath.trim();
         reqPath = reqPath.toLowerCase();
         Pair<String, HttpMethod> routeInfo = new Pair<String, HttpMethod>(reqPath, httpMethod);
         Pair<BaseModule, Method> logicMethod;
         if(!RouteHashing.containsKey(routeInfo))
         {
-            res.sendError(404, "Not found :-(");
+            System.out.println("Route " + reqPath + " didn't caught by main servlet.");
+            res.sendError(404);
             return;
         }
 
@@ -80,17 +88,23 @@ public class RouteProcessingService {
         Method method = logicMethod.getValue();
         BaseModule module = logicMethod.getKey();
         method.setAccessible(true);
+        System.out.println("3 " + method.getName());
 
         try {
             method.invoke(module, req, res);
+            System.out.println("4.1");
         }catch (IllegalAccessException ex) {
             ex.printStackTrace();
+            System.out.println("4.2");
         }
         catch (InvocationTargetException ex) {
+            System.out.println("4.3 " + ex.getMessage());
             if(ex.getCause().getClass().equals(ServletException.class))
                 throw new ServletException(ex.getMessage());
-            if(ex.getCause().getClass().equals(IOException.class))
+            else if(ex.getCause().getClass().equals(IOException.class))
                 throw new IOException(ex.getMessage());
+            else
+                throw new ServletException(ex.getCause());
         }
     }
 }

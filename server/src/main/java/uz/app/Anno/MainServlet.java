@@ -1,6 +1,7 @@
 package uz.app.Anno;
 
 
+import uz.app.Anno.Util.Anno;
 import uz.app.Anno.Util.HttpMethod;
 
 import javax.servlet.ServletException;
@@ -14,30 +15,23 @@ import java.util.HashMap;
 @WebServlet(name="AnnoMainServlet", value = "/*")
 public class MainServlet extends HttpServlet {
 
-
-    public static void Init() { }
-
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        System.out.println(req.getPathInfo());
-        RouteProcessingService.process(req.getPathInfo(), HttpMethod.GET, req, resp);
+    public void init() throws ServletException {
+        if(!Global.isInit)
+        {
+            try {
+                Global.Init(getServletContext());
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                throw new ServletException(ex.getCause());
+            }
+        }
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        System.out.println(req.getPathInfo());
-        RouteProcessingService.process(req.getPathInfo(), HttpMethod.POST, req, resp);
-    }
-
-    @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        System.out.println(req.getPathInfo());
-        RouteProcessingService.process(req.getPathInfo(), HttpMethod.PUT, req, resp);
-    }
-
-    @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        System.out.println(req.getPathInfo());
-        RouteProcessingService.process(req.getPathInfo(), HttpMethod.DELETE, req, resp);
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String method = req.getMethod().trim().toUpperCase();
+        System.out.println(HttpMethod.valueOf(HttpMethod.class, method) + " " + req.getRequestURI());
+        RouteProcessingService.process(req.getRequestURI(), HttpMethod.valueOf(HttpMethod.class, method), req, resp);
     }
 }

@@ -9,6 +9,8 @@ public class Task extends BaseEntity {
     private float order;
     private int ownerId;
 
+    public Task() {};
+
     public Task(int id, String title, String description, float order, int ownerId) {
         this.id = id;
         this.title = title;

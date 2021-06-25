@@ -14,6 +14,8 @@ public class Desk extends BaseEntity {
     private Date createDate;
     private Date updateDate;
 
+    public Desk() {}
+
     public Desk(int id, String name, String description, float order, int ownerId, int createdBy, Date createDate, Date updateDate) {
         this.id = id;
         this.name = name;

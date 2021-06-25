@@ -41,6 +41,18 @@ public class User extends BaseEntity {
         if(!Rgx.isEmail(this.email))
             return false;
 
+        if(this.fullName == null || this.fullName.length() == 0)
+            return false;
+
+        if(this.login == null || this.login.length() == 0)
+            return false;
+
+        if(this.passwordHash == null || this.passwordHash.length() == 0)
+            return false;
+
+        if(this.state == null || this.state.length() == 0)
+            this.state = "A";
+
         return true;
     }
 

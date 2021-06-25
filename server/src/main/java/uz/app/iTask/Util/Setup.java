@@ -41,6 +41,7 @@ public class Setup implements ServletContextListener {
             throw new RuntimeException("Couldn't initialize app.");
         }
     }
+
     public void contextDestroyed(ServletContextEvent event)
     {
     }

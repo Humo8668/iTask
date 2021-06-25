@@ -21,7 +21,15 @@
     <listener>
         <listener-class>uz.app.iTask.Util.Setup</listener-class>
     </listener>
-    <listener>
-        <listener-class>uz.app.Anno.Global</listener-class>
-    </listener>
+
+
+    <servlet>
+        <servlet-name>CheckServlet</servlet-name>
+        <servlet-class>uz.app.iTask.Servlets.CheckServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>CheckServlet</servlet-name>
+        <url-pattern>/check</url-pattern>
+    </servlet-mapping>
 </web-app>
