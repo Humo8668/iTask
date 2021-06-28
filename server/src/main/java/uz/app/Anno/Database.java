@@ -36,8 +36,6 @@ public class Database{
             availConnections.add(connection);
         }
 
-
-
         return;
     }
 

@@ -24,6 +24,10 @@ public class Global {
         DB_USERNAME = ctx.getInitParameter("DB_USERNAME");
         DB_PASSWORD = ctx.getInitParameter("DB_PASSWORD");
         DB_CONN_POOL_SIZE = ctx.getInitParameter("DB_CONN_POOL_SIZE");
+
+        System.out.println("DB_STRING = " + DB_STRING);
+        System.out.println("DB_USERNAME = " + DB_USERNAME);
+        System.out.println("DB_PASSWORD = " + DB_PASSWORD);
         System.out.println("DB_CONN_POOL_SIZE = " + DB_CONN_POOL_SIZE);
 
         Database.Init();

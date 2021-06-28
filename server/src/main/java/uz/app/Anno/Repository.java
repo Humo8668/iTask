@@ -38,16 +38,6 @@ public class Repository<T extends BaseEntity> {
     protected Field[] entityFields;
     private Constructor constructor = null;
 
-    protected String getTableFullName()
-    {
-        return this.SCHEMA_NAME + ".\"" + this.TABLE_NAME + "\"";
-    }
-
-    protected String getIdColumnName()
-    {
-        return Anno.getColumnName(idField);
-    }
-
     public Repository()
     {
         Instances.add(this);
@@ -90,7 +80,7 @@ public class Repository<T extends BaseEntity> {
             rs.beforeFirst();
             while(rs.next()) {
                 int ordinalPosition = rs.getInt("ORDINAL_POSITION");
-                Field currField = Anno.getFieldByColumnName(colName.get(ordinalPosition), ClassRef);
+                Field currField = Anno.forEntity(ClassRef).getFieldByColumnName(colName.get(ordinalPosition));
                 if(currField == null) // if there's no field in class that corresponds to current column then continue.
                     continue;
 
@@ -131,7 +121,6 @@ public class Repository<T extends BaseEntity> {
             ex.printStackTrace();
             return; // Couldn't connect to database. Refreshing stopped.
         }
-
     }
 
     protected void SetTargetEntity(Class<T> cl)
@@ -161,7 +150,7 @@ public class Repository<T extends BaseEntity> {
 
             Annotation SchemaAnno = ClassRef.getAnnotation(Schema.class);
             Annotation TableAnno = ClassRef.getAnnotation(Table.class);
-            this.idField = Anno.getIdField(ClassRef);
+            this.idField = Anno.forEntity(ClassRef).getIdField();
 
 
             if(SchemaAnno == null) {
@@ -190,7 +179,8 @@ public class Repository<T extends BaseEntity> {
             throw new SQLException("Couldn't connect to database.");
 
         LinkedList<T> entities = new LinkedList<T>();
-        PreparedStatement stmt = connection.prepareStatement("SELECT * FROM " + getTableFullName());
+        PreparedStatement stmt = connection.prepareStatement("SELECT * FROM " +
+                Anno.forEntity(ClassRef).getTableFullName());
         ResultSet rs = stmt.executeQuery();
         ResultSetMetaData rsmd = rs.getMetaData();
         T entity;
@@ -219,7 +209,15 @@ public class Repository<T extends BaseEntity> {
             throw new SQLException("Couldn't connect to database.");
 
         T entity;
-        PreparedStatement stmt = connection.prepareStatement("SELECT * FROM " + getTableFullName() + " WHERE " + getIdColumnName() + " = ?");
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT * FROM ")
+                .append(Anno.forEntity(ClassRef).getTableFullName())
+                .append(" WHERE ")
+                .append(Anno.forEntity(ClassRef).getIdColumnName())
+                .append(" = ?");
+
+
+        PreparedStatement stmt = connection.prepareStatement(query.toString());
         stmt.setLong(1, id);
         ResultSet rs = stmt.executeQuery();
         ResultSetMetaData rsmd = rs.getMetaData();
@@ -262,9 +260,14 @@ public class Repository<T extends BaseEntity> {
         //	VALUES ('Vasya_gq', 'Vasya Ivanov', 'v.ivanov@meyl.ru', '$2y$12$ALkeFSdcN7o.JAY/e9z7VePMLD7WWJYDAbVyknB/tG40BWP.tgnh6', 'A');
 
         String fields = getEntityFields();
-        StringBuilder SqlQuery = new StringBuilder("INSERT INTO ");
         String valuesPlaceholder = getEntityValuePlaceholders();
-        SqlQuery.append(getTableFullName()).append(" (").append(fields).append(") VALUES (").append(valuesPlaceholder).append(");");
+        StringBuilder SqlQuery = new StringBuilder("INSERT INTO ");
+        SqlQuery.append(Anno.forEntity(ClassRef).getTableFullName())
+                .append(" (")
+                .append(fields)
+                .append(") VALUES (")
+                .append(valuesPlaceholder)
+                .append(");");
 
 
         PreparedStatement stmt = connection.prepareStatement(SqlQuery.toString());
@@ -321,7 +324,11 @@ public class Repository<T extends BaseEntity> {
             throw new SQLException("Couldn't connect to database.");
 
         System.out.println("Delete requested for id = " + id);
-        PreparedStatement stmt = connection.prepareStatement("DELETE FROM " + getTableFullName() + " WHERE " + getIdColumnName() + " = ?");
+        PreparedStatement stmt = connection.prepareStatement("DELETE FROM " +
+                Anno.forEntity(ClassRef).getTableFullName() +
+                " WHERE " +
+                Anno.forEntity(ClassRef).getIdColumnName() +
+                " = ?");
         stmt.setLong(1, id);
         stmt.executeUpdate();
 
@@ -336,7 +343,8 @@ public class Repository<T extends BaseEntity> {
         if(connection == null)
             throw new Exception("Couldn't connect to database.");
 
-        PreparedStatement stmt = connection.prepareStatement("SELECT count(*) FROM " + getTableFullName());
+        PreparedStatement stmt = connection.prepareStatement("SELECT count(*) FROM " +
+                Anno.forEntity(ClassRef).getTableFullName());
         ResultSet rs = stmt.executeQuery();
         rs.next();
         try {
@@ -365,7 +373,7 @@ public class Repository<T extends BaseEntity> {
         for(int colIndex = 1; colIndex <= rsmd.getColumnCount(); colIndex++)
         {
             String colName = rsmd.getColumnName(colIndex);
-            Field field = Anno.getFieldByColumnName(colName, cl);
+            Field field = Anno.forEntity(cl).getFieldByColumnName(colName);
             int colType = rsmd.getColumnType(colIndex);
 
             if(field == null)
@@ -431,7 +439,7 @@ public class Repository<T extends BaseEntity> {
             if(GeneratedFields.contains(field) || AutoincrementFields.contains(field)) // exclude generated and autoincrement fields
                 continue;
 
-            String columnName = Anno.getColumnName(field);
+            String columnName = Anno.forEntity(ClassRef).getColumnName(field);
             fieldsList.append('"');
             fieldsList.append(columnName);
             fieldsList.append('"');

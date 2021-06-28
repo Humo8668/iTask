@@ -1,12 +1,10 @@
 package uz.app.Anno.Util;
 
+import uz.app.Anno.*;
 import uz.app.Anno.Annotations.Column;
 import uz.app.Anno.Annotations.Id;
+import uz.app.Anno.Annotations.Schema;
 import uz.app.Anno.Annotations.Table;
-import uz.app.Anno.Database;
-import uz.app.Anno.Global;
-import uz.app.Anno.Repository;
-import uz.app.Anno.RouteProcessingService;
 import uz.app.iTask.Repositories.*;
 
 import javax.servlet.ServletContext;
@@ -19,14 +17,93 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 public class Anno {
-    public static class TableMetaData{}
+    public static class TableMetaData
+    {
+        String TABLE_NAME;
 
-    public static class EntityMetaData{}
+        public TableMetaData(String tableName)
+        {
+            this.TABLE_NAME = tableName;
+        }
 
-    public static TableMetaData forTable() { return new TableMetaData(); }
 
-    public static EntityMetaData forEntity() { return new EntityMetaData(); }
+    }
 
+    public static class EntityMetaData
+    {
+        Class<? extends BaseEntity> ENTITY_CLASS;
+        public EntityMetaData(Class<? extends BaseEntity> entityClass)
+        {
+            this.ENTITY_CLASS = entityClass;
+        }
+
+        public String getColumnName(Field field)
+        {
+            if(field == null)
+                return "";
+
+            return field.getAnnotation(Column.class).value();
+        }
+
+        public Field getFieldByColumnName(String columnName)
+        {
+            Field[] fields = ENTITY_CLASS.getDeclaredFields();
+            for(Field field : fields)
+            {
+                String currColumn = field.getAnnotation(Column.class).value();
+                if(columnName.equals(currColumn))
+                {
+                    field.setAccessible(true);
+                    return field;
+                }
+            }
+            return null;
+        }
+
+        public Field getIdField()
+        {
+            Field res = null;
+            Field[] fields = ENTITY_CLASS.getDeclaredFields();
+            for (Field field: fields) {
+                if(field.getAnnotation(Id.class) != null)
+                {
+                    res = field;
+                    break;
+                }
+            }
+            return res;
+        }
+
+        public String getIdColumnName()
+        {
+            return getColumnName(getIdField());
+        }
+
+        public String getTableFullName()
+        {
+            return getSchemaName() + ".\"" + getTableName() + "\"";
+        }
+
+        public String getTableName()
+        {
+            return this.ENTITY_CLASS.getAnnotation(Table.class).value();
+        }
+
+        public String getSchemaName()
+        {
+            return this.ENTITY_CLASS.getAnnotation(Schema.class).value();
+        }
+    }
+
+    public static TableMetaData forTable(String tableName)
+    {
+        return new TableMetaData(tableName);
+    }
+
+    public static EntityMetaData forEntity(Class<? extends BaseEntity> entityClass)
+    {
+        return new EntityMetaData(entityClass);
+    }
 
     private static HashMap<Pair<Class, String>, Field> columnField;     // <EntityClass, ColumnName, FieldInClass>
 
@@ -34,60 +111,5 @@ public class Anno {
     {
         columnField = new HashMap<Pair<Class, String>, Field>();
     }
-
-    public static String getColumnName(Field field)
-    {
-        if(field == null)
-            return "";
-        return field.getAnnotation(Column.class).value();
-    }
-
-    public static Field getFieldByColumnName(String columnName, Class cl)
-    {
-        Pair<Class, String> column = new Pair<Class, String>(cl, columnName);
-        if(columnField.containsKey(column))
-        {
-            return columnField.get(column);
-        }
-        // else
-        Field[] fields = cl.getDeclaredFields();
-        for(Field field : fields)
-        {
-            String currColumn = field.getAnnotation(Column.class).value();
-            if(columnName.equals(currColumn))
-            {
-                field.setAccessible(true);
-                columnField.put(column, field);
-                return field;
-            }
-        }
-
-        return null;
-    }
-
-    public static Field getIdField(Class objectClass)
-    {
-        //System.out.println("Id field searching started for " + objectClass.getName());
-        Field res = null;
-        Field[] fields = objectClass.getDeclaredFields();
-        //System.out.println("Count = " + fields.length);
-        for (Field field: fields) {
-            //System.out.println("Another field : " + field.getName());
-            if(field.getAnnotation(Id.class) != null)
-            {
-                res = field;
-                //System.out.println(field.getName() + " has <id> annotation");
-                break;
-            }
-        }
-        return res;
-    }
-
-
-    /*public static Class getTypeVariable(Class cl, int varIndex)
-    {
-        Class actualClass = cl;
-        return (Class) ((ParameterizedType) actualClass.getGenericSuperclass()).getActualTypeArguments()[varIndex];
-    }*/
 
 }

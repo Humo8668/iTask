@@ -83,7 +83,6 @@ public class UsersService extends BaseModule {
 
         String reqBody = this.getReqBody(req);
         User u = gson.fromJson(reqBody, User.class);
-        u.setState("A");
         StdResp stdResp = new StdResp();
 
         try {
