@@ -3,6 +3,7 @@ package uz.app.Anno;
 import uz.app.Anno.Annotations.Schema;
 import uz.app.Anno.Annotations.Table;
 import uz.app.Anno.Util.Anno;
+import uz.app.Anno.Util.AnnoValidationException;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -10,6 +11,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -79,6 +81,7 @@ public class Repository<T extends BaseEntity> {
                 colName.put(rs.getInt("ORDINAL_POSITION"), rs.getString("COLUMN_NAME"));
             }
         } catch (SQLException ex) {
+            ex.printStackTrace();
             return; // Couldn't connect to database. Refreshing stopped.
         }
 
@@ -94,6 +97,7 @@ public class Repository<T extends BaseEntity> {
                 colField.put(ordinalPosition, currField);
             }
         } catch (SQLException ex) {
+            ex.printStackTrace();
             return; // Couldn't connect to database. Refreshing stopped.
         }
 
@@ -124,6 +128,7 @@ public class Repository<T extends BaseEntity> {
                 FieldSqlTypes.put(currField, rs.getInt("DATA_TYPE"));
             }
         } catch (SQLException ex) { //if a database access error occurs; method <beforeFirst()> is called on a closed result set or the result set type is TYPE_FORWARD_ONLY
+            ex.printStackTrace();
             return; // Couldn't connect to database. Refreshing stopped.
         }
 
@@ -178,11 +183,11 @@ public class Repository<T extends BaseEntity> {
         }
     }
 
-    public T[] getAll() throws Exception
+    public T[] getAll() throws SQLException
     {
         Connection connection = Database.getConnection();
         if(connection == null)
-            throw new Exception("Couldn't connect to database.");
+            throw new SQLException("Couldn't connect to database.");
 
         LinkedList<T> entities = new LinkedList<T>();
         PreparedStatement stmt = connection.prepareStatement("SELECT * FROM " + getTableFullName());
@@ -207,11 +212,11 @@ public class Repository<T extends BaseEntity> {
         return entities.toArray(res);
     };
 
-    public T getById(long id) throws Exception
+    public T getById(long id) throws SQLException
     {
         Connection connection = Database.getConnection();
         if(connection == null)
-            throw new Exception("Couldn't connect to database.");
+            throw new SQLException("Couldn't connect to database.");
 
         T entity;
         PreparedStatement stmt = connection.prepareStatement("SELECT * FROM " + getTableFullName() + " WHERE " + getIdColumnName() + " = ?");
@@ -233,26 +238,25 @@ public class Repository<T extends BaseEntity> {
         return entity;
     }
 
-    public boolean save(T entity)
+    public void save(T entity) throws SQLException, AnnoValidationException
     {
         Connection connection = Database.getConnection();
         if(connection == null)
-            throw new Exception("Couldn't connect to database.");
+            throw new SQLException("Couldn't connect to database.");
 
         if(entity == null)
-            return false;
+            return;
 
-        if(!entity.isValid())
-            return false;
+        entity.validate();
 
-        for (Field field : entityFields)
+        /*for (Field field : entityFields)
         {
             field.setAccessible(true);
             if(field.get(entity) != null)
                 System.out.println(field.getName() + " : " + field.get(entity).toString());
             else
                 System.out.println(field.getName() + " : null");
-        }
+        }*/
 
         //  INSERT INTO public."Users"("login", "fullName", "email", "passwordHash", "state")
         //	VALUES ('Vasya_gq', 'Vasya Ivanov', 'v.ivanov@meyl.ru', '$2y$12$ALkeFSdcN7o.JAY/e9z7VePMLD7WWJYDAbVyknB/tG40BWP.tgnh6', 'A');
@@ -273,7 +277,8 @@ public class Repository<T extends BaseEntity> {
                 continue;
 
             field.setAccessible(true);
-            Object value = field.get(entity);
+            Object value;
+            try { value = field.get(entity); } catch (IllegalAccessException ex) { ex.printStackTrace(); value = ""; }
             if(FieldSqlTypes.containsKey(field)) // if column type info exists
             {
                 SqlType = FieldSqlTypes.get(field);
@@ -305,14 +310,15 @@ public class Repository<T extends BaseEntity> {
         int affectedRowsCtn = stmt.executeUpdate();
         Database.close(connection);
 
-        return (affectedRowsCtn != 0);
+        if(affectedRowsCtn == 0)
+            throw new SQLException("SQL: No rows affected");
     }
 
-    public boolean delete(long id) throws Exception
+    public boolean delete(long id) throws SQLException
     {
         Connection connection = Database.getConnection();
         if(connection == null)
-            throw new Exception("Couldn't connect to database.");
+            throw new SQLException("Couldn't connect to database.");
 
         System.out.println("Delete requested for id = " + id);
         PreparedStatement stmt = connection.prepareStatement("DELETE FROM " + getTableFullName() + " WHERE " + getIdColumnName() + " = ?");
@@ -345,10 +351,15 @@ public class Repository<T extends BaseEntity> {
         return res;
     }
 
-    protected final T makeObject(ResultSet rs, ResultSetMetaData rsmd) throws Exception
+    protected final T makeObject(ResultSet rs, ResultSetMetaData rsmd) throws SQLException
     {
-        Object obj = null;
-        obj = constructor.newInstance();    // can throw exception
+        Object obj;
+        try {
+            obj = constructor.newInstance();
+        } catch (InstantiationException|IllegalAccessException|InvocationTargetException ex) {
+            ex.printStackTrace();
+            return null;
+        }
 
         Class cl = obj.getClass();
         for(int colIndex = 1; colIndex <= rsmd.getColumnCount(); colIndex++)
@@ -357,44 +368,52 @@ public class Repository<T extends BaseEntity> {
             Field field = Anno.getFieldByColumnName(colName, cl);
             int colType = rsmd.getColumnType(colIndex);
 
-            switch (colType){
-                case Types.VARCHAR:
-                case Types.LONGVARCHAR:
-                case Types.CHAR:
-                case Types.NCHAR:
-                case Types.NVARCHAR:
-                    field.set(obj, rs.getString(colIndex).trim());
-                    break;
-                case Types.INTEGER:
-                case Types.NUMERIC:
-                    field.setInt(obj, rs.getInt(colIndex));
-                    break;
-                case Types.BIGINT:
-                    field.setLong(obj, rs.getLong(colIndex));
-                    break;
-                case Types.SMALLINT:
-                case Types.TINYINT:
-                    field.setShort(obj, rs.getShort(colIndex));
-                    break;
-                case Types.REAL:
-                    field.setFloat(obj, rs.getFloat(colIndex));
-                    break;
-                case Types.DOUBLE:
-                case Types.DECIMAL:
-                    field.setDouble(obj, rs.getDouble(colIndex));
-                    break;
-                case Types.TIME:
-                    field.set(obj, rs.getTime(colIndex));
-                    break;
-                case Types.TIMESTAMP:
-                    field.set(obj, rs.getTimestamp(colIndex));
-                    break;
-                case Types.DATE:
-                    field.set(obj, rs.getDate(colIndex));
-                    break;
-                default:
-                    field.set(obj, rs.getObject(colIndex));
-                    break;
+            if(field == null)
+                continue;
+            field.setAccessible(true);
+
+            try {
+                switch (colType) {
+                    case Types.VARCHAR:
+                    case Types.LONGVARCHAR:
+                    case Types.CHAR:
+                    case Types.NCHAR:
+                    case Types.NVARCHAR:
+                        field.set(obj, rs.getString(colIndex).trim());
+                        break;
+                    case Types.INTEGER:
+                    case Types.NUMERIC:
+                        field.setInt(obj, rs.getInt(colIndex));
+                        break;
+                    case Types.BIGINT:
+                        field.setLong(obj, rs.getLong(colIndex));
+                        break;
+                    case Types.SMALLINT:
+                    case Types.TINYINT:
+                        field.setShort(obj, rs.getShort(colIndex));
+                        break;
+                    case Types.REAL:
+                        field.setFloat(obj, rs.getFloat(colIndex));
+                        break;
+                    case Types.DOUBLE:
+                    case Types.DECIMAL:
+                        field.setDouble(obj, rs.getDouble(colIndex));
+                        break;
+                    case Types.TIME:
+                        field.set(obj, rs.getTime(colIndex));
+                        break;
+                    case Types.TIMESTAMP:
+                        field.set(obj, rs.getTimestamp(colIndex));
+                        break;
+                    case Types.DATE:
+                        field.set(obj, rs.getDate(colIndex));
+                        break;
+                    default:
+                        field.set(obj, rs.getObject(colIndex));
+                        break;
+                }
+            } catch (IllegalAccessException ex) {
+                ex.printStackTrace();
             }
         }
         return (T)obj;

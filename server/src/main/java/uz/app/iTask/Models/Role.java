@@ -4,7 +4,7 @@ import uz.app.Anno.BaseEntity;
 
 import java.util.Date;
 
-public class Role extends BaseEntity {
+public class Role/* extends BaseEntity*/ {
     private long id;
     private String name;
     private int createdBy;
@@ -43,10 +43,5 @@ public class Role extends BaseEntity {
 
     public Date getUpdateDate() {
         return updateDate;
-    }
-
-    @Override
-    public boolean isValid() {
-        return true;
     }
 }

@@ -13,25 +13,4 @@ public class UserRepo extends Repository<User> {
     {
         SetTargetEntity(User.class);
     }
-
-
-    /*public User[] getAll() throws Exception {
-
-    }*/
-
-    /*public User getById(long id) {
-        return null;
-    }*/
-
-    /*public boolean save(User entity) {
-        return false;
-    }*/
-
-    /*public boolean delete(long id) {
-        return false;
-    }*/
-
-    /*public long count() {
-        return 0;
-    }*/
 }

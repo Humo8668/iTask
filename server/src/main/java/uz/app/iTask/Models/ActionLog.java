@@ -5,7 +5,7 @@ import uz.app.Anno.BaseEntity;
 import java.util.Date;
 
 // Data-class of logs of user's actions.
-public class ActionLog extends BaseEntity {
+public class ActionLog /*extends BaseEntity */{
     private long id;
     private int userId;         // User's id that performed action;
     private int actionId;       // Id of action;
@@ -40,10 +40,5 @@ public class ActionLog extends BaseEntity {
 
     public Date getActionDate() {
         return actionDate;
-    }
-
-    @Override
-    public boolean isValid() {
-        return true;
     }
 }

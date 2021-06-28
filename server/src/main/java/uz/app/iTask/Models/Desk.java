@@ -4,7 +4,7 @@ import uz.app.Anno.BaseEntity;
 
 import java.util.Date;
 
-public class Desk extends BaseEntity {
+public class Desk /*extends BaseEntity*/ {
     private long id;
     private String name;
     private String description;
@@ -69,10 +69,5 @@ public class Desk extends BaseEntity {
 
     public int getOwnerId() {
         return ownerId;
-    }
-
-    @Override
-    public boolean isValid() {
-        return true;
     }
 }

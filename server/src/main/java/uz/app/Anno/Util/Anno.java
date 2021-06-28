@@ -19,6 +19,15 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 public class Anno {
+    public static class TableMetaData{}
+
+    public static class EntityMetaData{}
+
+    public static TableMetaData forTable() { return new TableMetaData(); }
+
+    public static EntityMetaData forEntity() { return new EntityMetaData(); }
+
+
     private static HashMap<Pair<Class, String>, Field> columnField;     // <EntityClass, ColumnName, FieldInClass>
 
     public static void Init() throws Exception

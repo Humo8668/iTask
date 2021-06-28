@@ -2,7 +2,7 @@ package uz.app.iTask.Models;
 
 import uz.app.Anno.BaseEntity;
 
-public class Task extends BaseEntity {
+public class Task/* extends BaseEntity*/ {
     private long id;
     private String title;
     private String description;
@@ -51,8 +51,4 @@ public class Task extends BaseEntity {
         return id;
     }
 
-    @Override
-    public boolean isValid() {
-        return true;
-    }
 }

@@ -2,8 +2,10 @@ package uz.app.iTask.Models;
 
 import uz.app.Anno.Annotations.*;
 import uz.app.Anno.BaseEntity;
+import uz.app.Anno.Util.AnnoValidationException;
 import uz.app.Anno.Util.Rgx;
 
+import java.sql.SQLException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,6 +57,25 @@ public class User extends BaseEntity {
 
         return true;
     }
+
+    @Override
+    public void validate() throws AnnoValidationException {
+        if(!Rgx.isEmail(this.email))
+            throw new AnnoValidationException("14010", "Invalid email");
+
+        if(this.fullName == null || this.fullName.length() == 0)
+            throw new AnnoValidationException("14020", "Invalid full name: empty");
+
+        if(this.login == null || this.login.length() == 0)
+            throw new AnnoValidationException("14030", "Invalid login: empty");
+
+        if(this.passwordHash == null || this.passwordHash.length() == 0)
+            throw new AnnoValidationException("14040", "Invalid password hash: empty");
+
+        if(this.state == null || this.state.length() == 0)
+            this.state = "A";
+    }
+
 
     public long getId() {
         return id;

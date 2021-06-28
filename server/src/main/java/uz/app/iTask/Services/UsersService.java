@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import uz.app.Anno.Annotations.Module;
 import uz.app.Anno.Annotations.Route;
 import uz.app.Anno.BaseModule;
+import uz.app.Anno.Util.AnnoValidationException;
 import uz.app.Anno.Util.HttpMethod;
 import uz.app.iTask.Models.User;
 import uz.app.iTask.Util.StdResp;
@@ -16,6 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -85,23 +87,18 @@ public class UsersService extends BaseModule {
         StdResp stdResp = new StdResp();
 
         try {
-            if(Setup.userRepo.save(u)) {
-                stdResp.errorCode = "0";
-                stdResp.errorText = "Success";
-                out.print(gson.toJson(stdResp));
-            }
-            else {
-                stdResp.errorCode = "1403";
-                stdResp.errorText = "Some error occurred";
-                out.print(gson.toJson(stdResp));
-            }
-        } catch (Exception ex) {
+            Setup.userRepo.save(u);
+            stdResp.errorCode = "0";
+            stdResp.errorText = "Success";
+        } catch (SQLException ex) {
             log.error("Error: " + ex.getMessage() + "\n");
-            ex.printStackTrace();
             res.sendError(500, "Error occurred: " + ex.getMessage());
             return;
+        } catch (AnnoValidationException ex) {
+            stdResp.errorCode = ex.errorCode;
+            stdResp.errorText = ex.getMessage();
         }
-
+        out.print(gson.toJson(stdResp));
         res.setContentType("application/json");
         res.setStatus(200);
     }
@@ -141,7 +138,6 @@ public class UsersService extends BaseModule {
                 res.sendError(500, "Error occurred: " + ex.getMessage());
                 return;
             }
-
         }
 
         out.print(gson.toJson(stdResp));
