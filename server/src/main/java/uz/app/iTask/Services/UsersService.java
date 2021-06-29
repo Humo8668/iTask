@@ -115,32 +115,25 @@ public class UsersService extends BaseModule {
         if(!jsonMap.containsKey("user_id")) {
             stdResp.errorCode = "1";
             stdResp.errorText = "Necessary parameter does not exist.";
-            System.out.println("Necessary parameter does not exist.");
+            //System.out.println("Necessary parameter does not exist.");
         }
         else {
-            Long userId = Double.valueOf(jsonMap.get("user_id").toString()).longValue();
-            System.out.println("User_id = " + userId);
             try {
-                if(Setup.userRepo.delete(userId)) {
-                    stdResp.errorCode = "0";
-                    stdResp.errorText = "Success";
-                    System.out.println("Success");
-                }
-                else {
-                    stdResp.errorCode = "1404";
-                    stdResp.errorText = "Some error";
-                    System.out.println("Some error");
-                }
-            } catch (Exception ex) {
+                Long userId = Double.valueOf(jsonMap.get("user_id").toString()).longValue();
+                Setup.userRepo.delete(userId);
+                stdResp.errorCode = "0";
+                stdResp.errorText = "Success";
+            } catch (NumberFormatException ex) {
+                stdResp.errorCode = "01000";
+                stdResp.errorText = "Number format exception: " + ex.getMessage();
+            } catch (SQLException ex) {
                 ex.printStackTrace();
-                System.out.println(ex.getMessage());
+                //System.out.println(ex.getMessage());
                 res.sendError(500, "Error occurred: " + ex.getMessage());
                 return;
             }
         }
-
         out.print(gson.toJson(stdResp));
-        //out.print("{\"result\" : \"success\"}");
         res.setContentType("application/json");
         res.setStatus(200);
     }

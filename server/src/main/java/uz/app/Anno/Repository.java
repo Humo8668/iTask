@@ -5,18 +5,13 @@ import uz.app.Anno.Annotations.Table;
 import uz.app.Anno.Util.Anno;
 import uz.app.Anno.Util.AnnoValidationException;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class Repository<T extends BaseEntity> {
     public static LinkedList<Repository> Instances;
@@ -30,97 +25,13 @@ public class Repository<T extends BaseEntity> {
 
     protected Class<T> ClassRef = null;
     protected Field idField;
-    protected LinkedList<Field> GeneratedFields;        // List of entity class's fields that correspond generated column
-    protected LinkedList<Field> AutoincrementFields;    // List of entity class's fields that correspond autoincrement column
-    protected HashMap<Field, Integer> FieldSqlTypes;    // <Field of entity's class, Corresponding SQL type>
-    protected HashMap<String, Field> ColumnField;       // <Column name, Entity's field>
-    protected LinkedList<Field> NullableFields;
-    protected Field[] entityFields;
+    protected LinkedList<Field> entityFields;
     private Constructor constructor = null;
 
     public Repository()
     {
         Instances.add(this);
-
-        FieldSqlTypes = new HashMap<Field, Integer>();
-        ColumnField = new HashMap<String, Field>();
-        AutoincrementFields = new LinkedList<Field>();
-        GeneratedFields = new LinkedList<Field>();
-        NullableFields = new LinkedList<Field>();
-        entityFields = new Field[0];
-    }
-
-    /**
-     * Refreshes table information for every mapping class fields
-     */
-    protected void gatherTableData()
-    {
-        Connection conn;
-        DatabaseMetaData metadata;
-        ResultSet rs;
-
-        HashMap<Integer, String> colName = new HashMap<Integer, String>();
-        HashMap<Integer, Field> colField = new HashMap<Integer, Field>();
-
-        // ===== Firstly, get table's column names
-        try {
-            conn = Database.getConnection();
-            metadata = conn.getMetaData();
-            rs = metadata.getColumns(null, SCHEMA_NAME, TABLE_NAME, "%");
-            while(rs.next()) {
-                colName.put(rs.getInt("ORDINAL_POSITION"), rs.getString("COLUMN_NAME"));
-            }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            return; // Couldn't connect to database. Refreshing stopped.
-        }
-
-        // ===== Secondly, match fields with ordinal numbers
-        try {
-            rs.beforeFirst();
-            while(rs.next()) {
-                int ordinalPosition = rs.getInt("ORDINAL_POSITION");
-                Field currField = Anno.forEntity(ClassRef).getFieldByColumnName(colName.get(ordinalPosition));
-                if(currField == null) // if there's no field in class that corresponds to current column then continue.
-                    continue;
-
-                colField.put(ordinalPosition, currField);
-            }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            return; // Couldn't connect to database. Refreshing stopped.
-        }
-
-        // Collect entity's fields that correspond to column in table
-        entityFields = colField.values().toArray(entityFields);
-
-        // ===== And then, match column names to class fields
-        for (Map.Entry<Integer, String> pair: colName.entrySet()) {
-            ColumnField.put(pair.getValue(), colField.get(pair.getKey()));
-        }
-
-        // ===== Finally, collect generated and autoincrement columns
-        try {
-            rs.beforeFirst();
-            while(rs.next()) {
-                int ordinalPosition = rs.getInt("ORDINAL_POSITION");
-                Field currField = colField.get(ordinalPosition);
-
-                if(rs.getString("IS_GENERATEDCOLUMN").equals("YES"))
-                    GeneratedFields.add(colField.get(ordinalPosition));
-
-                if(rs.getString("IS_AUTOINCREMENT").equals("YES"))
-                    AutoincrementFields.add(colField.get(ordinalPosition));
-
-                if(rs.getString("IS_NULLABLE").equals("YES"))
-                    NullableFields.add(colField.get(ordinalPosition));
-
-                FieldSqlTypes.put(currField, rs.getInt("DATA_TYPE"));
-            }
-        } catch (SQLException ex) { //if a database access error occurs; method <beforeFirst()> is called on a closed result set or the result set type is TYPE_FORWARD_ONLY
-            ex.printStackTrace();
-            return; // Couldn't connect to database. Refreshing stopped.
-        }
+        entityFields = new LinkedList<>();
     }
 
     protected void SetTargetEntity(Class<T> cl)
@@ -162,11 +73,10 @@ public class Repository<T extends BaseEntity> {
             if(this.idField == null)
                 throw new NullPointerException("Id field must be indicated for entity class <" + ClassRef.getName() + ">");
 
-            this.SCHEMA_NAME = ((Schema) SchemaAnno).value();
-            this.TABLE_NAME = ((Table) TableAnno).value();
-            entityFields = this.ClassRef.getDeclaredFields();
+            this.SCHEMA_NAME = Anno.forEntity(ClassRef).getSchemaName();
+            this.TABLE_NAME = Anno.forEntity(ClassRef).getTableName();
+            entityFields = Anno.forEntity(ClassRef).getAllFields();
 
-            gatherTableData();
         } catch(Exception ex) {
             ex.printStackTrace();
         }
@@ -227,11 +137,6 @@ public class Repository<T extends BaseEntity> {
         else
             entity = null;
 
-        /*try {
-            Database.close(connection);
-        } catch (Exception ex) {
-            Database.toTrash(connection);
-        }*/
         Database.close(connection);
         return entity;
     }
@@ -276,37 +181,18 @@ public class Repository<T extends BaseEntity> {
         int index = 1;
         for (Field field : entityFields)
         {
-            if(GeneratedFields.contains(field) || AutoincrementFields.contains(field)) // exclude generated and autoincrement fields
+            String colName = Anno.forEntity(ClassRef).getColumnName(field);
+            if(!Anno.forTable(TABLE_NAME, SCHEMA_NAME).hasColumn(colName)
+                    || Anno.forTable(TABLE_NAME, SCHEMA_NAME).isGenerated(colName)
+                    || Anno.forTable(TABLE_NAME, SCHEMA_NAME).isAutoincrement(colName)) // exclude generated and autoincrement fields
                 continue;
 
             field.setAccessible(true);
             Object value;
             try { value = field.get(entity); } catch (IllegalAccessException ex) { ex.printStackTrace(); value = ""; }
-            if(FieldSqlTypes.containsKey(field)) // if column type info exists
-            {
-                SqlType = FieldSqlTypes.get(field);
-                stmt.setObject(index, value, SqlType);
-            } else
-            {
-                stmt.setObject(index,value);
-            }
 
-            /*if(type.equals(Integer.TYPE))
-                stmt.setInt(index, field.getInt(entity));
-            else if(type.equals(Long.TYPE))
-                stmt.setLong(index, field.getLong(entity));
-            else if(type.equals(Float.TYPE))
-                stmt.setFloat(index, field.getFloat(entity));
-            else if(type.equals(Double.TYPE))
-                stmt.setDouble(index, field.getDouble(entity));
-            else if(type.equals(String.class))
-                stmt.setString(index, field.get(entity).toString());
-            else if(type.equals(Short.TYPE))
-                stmt.setShort(index, field.getShort(entity));
-            else if(type.equals(Date.class))
-                stmt.setDate(index, java.sql.Date.valueOf(field.get(entity).toString()) );
-            else
-                stmt.setObject(index, field.get(entity));*/
+            SqlType = Anno.forTable(TABLE_NAME, SCHEMA_NAME).getDataType(colName);
+            stmt.setObject(index, value, SqlType);
 
             index++;
         }
@@ -317,13 +203,12 @@ public class Repository<T extends BaseEntity> {
             throw new SQLException("SQL: No rows affected");
     }
 
-    public boolean delete(long id) throws SQLException
+    public void delete(long id) throws SQLException
     {
         Connection connection = Database.getConnection();
         if(connection == null)
             throw new SQLException("Couldn't connect to database.");
 
-        System.out.println("Delete requested for id = " + id);
         PreparedStatement stmt = connection.prepareStatement("DELETE FROM " +
                 Anno.forEntity(ClassRef).getTableFullName() +
                 " WHERE " +
@@ -333,7 +218,6 @@ public class Repository<T extends BaseEntity> {
         stmt.executeUpdate();
 
         Database.close(connection);
-        return true;
     }
 
     public long count() throws Exception
@@ -436,12 +320,14 @@ public class Repository<T extends BaseEntity> {
         StringBuilder fieldsList = new StringBuilder();
         for (Field field: entityFields)
         {
-            if(GeneratedFields.contains(field) || AutoincrementFields.contains(field)) // exclude generated and autoincrement fields
+            String colName = Anno.forEntity(ClassRef).getColumnName(field);
+            if(!Anno.forTable(TABLE_NAME, SCHEMA_NAME).hasColumn(colName)
+                    || Anno.forTable(TABLE_NAME, SCHEMA_NAME).isGenerated(colName)
+                    || Anno.forTable(TABLE_NAME, SCHEMA_NAME).isAutoincrement(colName)) // exclude generated and autoincrement fields
                 continue;
 
-            String columnName = Anno.forEntity(ClassRef).getColumnName(field);
             fieldsList.append('"');
-            fieldsList.append(columnName);
+            fieldsList.append(colName);
             fieldsList.append('"');
             fieldsList.append(',');
         }
@@ -453,7 +339,10 @@ public class Repository<T extends BaseEntity> {
         StringBuilder strBld = new StringBuilder();
         for (Field field : entityFields)
         {
-            if(GeneratedFields.contains(field) || AutoincrementFields.contains(field)) // exclude generated and autoincrement fields
+            String colName = Anno.forEntity(ClassRef).getColumnName(field);
+            if(!Anno.forTable(TABLE_NAME, SCHEMA_NAME).hasColumn(colName)
+                    || Anno.forTable(TABLE_NAME, SCHEMA_NAME).isGenerated(colName)
+                    || Anno.forTable(TABLE_NAME, SCHEMA_NAME).isAutoincrement(colName)) // exclude generated and autoincrement fields
                 continue;
             strBld.append("?,");
         }

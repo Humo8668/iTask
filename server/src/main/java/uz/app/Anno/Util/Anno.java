@@ -12,21 +12,106 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.sql.CallableStatement;
+import java.sql.*;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 
 public class Anno {
+    static HashMap<Class<? extends BaseEntity>, EntityMetaData> EntityMDCache;
+    static HashMap<String, TableMetaData> TableMDCache;
+
     public static class TableMetaData
     {
         String TABLE_NAME;
+        String SCHEMA_NAME;
 
-        public TableMetaData(String tableName)
+        HashMap<Integer, String> Naming;
+        HashMap<String, Integer> ColumnType;
+        LinkedList<String> NullableColumns;
+        LinkedList<String> GeneratedColumns;
+        LinkedList<String> AutoincrementColumns;
+
+
+        public TableMetaData(String tableName, String schemaName)
         {
             this.TABLE_NAME = tableName;
+            this.SCHEMA_NAME = schemaName;
+            Naming = new HashMap<Integer, String>();
+            NullableColumns = new LinkedList<String>();
+            GeneratedColumns = new LinkedList<String>();
+            AutoincrementColumns = new LinkedList<String>();
+            ColumnType = new HashMap<String, Integer>();
+
+            Connection conn = null;
+            DatabaseMetaData metadata;
+            ResultSet rs;
+            try {
+                conn = Database.getConnection();
+                metadata = conn.getMetaData();
+                rs = metadata.getColumns(null, SCHEMA_NAME, TABLE_NAME, "%");
+                while(rs.next()) {
+                    Integer ordinal = rs.getInt("ORDINAL_POSITION");
+                    String colName = rs.getString("COLUMN_NAME");
+                    Naming.put(ordinal, colName);
+                    if(rs.getString("IS_GENERATEDCOLUMN").equals("YES"))
+                        GeneratedColumns.add(colName);
+
+                    if(rs.getString("IS_AUTOINCREMENT").equals("YES"))
+                        AutoincrementColumns.add(colName);
+
+                    if(rs.getString("IS_NULLABLE").equals("YES"))
+                        NullableColumns.add(colName);
+
+                    ColumnType.put(colName, rs.getInt("DATA_TYPE"));
+                }
+                Database.close(conn);
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                return; // Couldn't connect to database. Refreshing stopped.
+            } finally {
+            }
         }
 
+        public boolean isNullable(String column)
+        {
+            return NullableColumns.contains(column);
+        }
 
+        public boolean isGenerated(String column)
+        {
+            return GeneratedColumns.contains(column);
+        }
+
+        public boolean isAutoincrement(String column)
+        {
+            return AutoincrementColumns.contains(column);
+        }
+
+        public boolean hasColumn(String column)
+        {
+            return Naming.values().contains(column);
+        }
+
+        public Integer getDataType(String column)
+        {
+            return ColumnType.get(column);
+        }
+
+        public Collection<String> getNullable()
+        {
+            return new LinkedList<>(NullableColumns);
+        }
+
+        public Collection<String> getGenerated()
+        {
+            return new LinkedList<>(GeneratedColumns);
+        }
+
+        public Collection<String> getAutoincrement()
+        {
+            return new LinkedList<>(AutoincrementColumns);
+        }
     }
 
     public static class EntityMetaData
@@ -35,6 +120,17 @@ public class Anno {
         public EntityMetaData(Class<? extends BaseEntity> entityClass)
         {
             this.ENTITY_CLASS = entityClass;
+        }
+
+        public LinkedList<Field> getAllFields()
+        {
+            LinkedList<Field> res = new LinkedList<Field>();
+            Field[] fields = ENTITY_CLASS.getDeclaredFields();
+            for(int i = 0; i < fields.length; i++)
+            {
+                res.add(fields[i]);
+            }
+            return res;
         }
 
         public String getColumnName(Field field)
@@ -97,19 +193,36 @@ public class Anno {
 
     public static TableMetaData forTable(String tableName)
     {
-        return new TableMetaData(tableName);
+        return forTable(tableName, "public");
+    }
+
+    public static TableMetaData forTable(String tableName, String schemaName)
+    {
+        String tableFullName = schemaName + "." + tableName;
+        if(TableMDCache.keySet().contains(tableFullName))
+            return TableMDCache.get(tableFullName);
+
+        TableMetaData tmd = new TableMetaData(tableName, schemaName);
+        TableMDCache.put(tableFullName, tmd);
+
+        return tmd;
     }
 
     public static EntityMetaData forEntity(Class<? extends BaseEntity> entityClass)
     {
-        return new EntityMetaData(entityClass);
-    }
+        if(EntityMDCache.keySet().contains(entityClass))
+            return EntityMDCache.get(entityClass);
 
-    private static HashMap<Pair<Class, String>, Field> columnField;     // <EntityClass, ColumnName, FieldInClass>
+        EntityMetaData emd = new EntityMetaData(entityClass);
+        EntityMDCache.put(entityClass, emd);
+
+        return emd;
+    }
 
     public static void Init() throws Exception
     {
-        columnField = new HashMap<Pair<Class, String>, Field>();
+        EntityMDCache = new HashMap<Class<? extends BaseEntity>, EntityMetaData>();
+        TableMDCache = new HashMap<String, TableMetaData>();
     }
 
 }
