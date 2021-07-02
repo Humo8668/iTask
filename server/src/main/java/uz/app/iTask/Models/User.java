@@ -5,10 +5,6 @@ import uz.app.Anno.BaseEntity;
 import uz.app.Anno.Util.AnnoValidationException;
 import uz.app.Anno.Util.Rgx;
 
-import java.sql.SQLException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 @Schema("public")
 @Table("Users")
 public class User extends BaseEntity {

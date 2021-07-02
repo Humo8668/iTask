@@ -1,8 +1,6 @@
 package uz.app.iTask.Repositories;
 
-import uz.app.Anno.Repository;
 import uz.app.iTask.Models.Task;
-import uz.app.iTask.Models.User;
 
 public class TaskRepo /*extends Repository<Task>*/ {
     public TaskRepo()

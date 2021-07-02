@@ -1,17 +1,16 @@
 package uz.app.Anno;
 
-import org.slf4j.*;
+import uz.app.Anno.Util.ConcurrentSet;
 
-import java.lang.reflect.Type;
-import java.math.BigDecimal;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.concurrent.ArrayBlockingQueue;
 
 public class Database{
     private static int POOL_SIZE = 10;
-    private static LinkedList<Connection> availConnections = null;
-    private static LinkedList<Connection> usingConnections = null;
+    private static int CONN_RETRY_MILLISECONDS = 50;   // Time in milliseconds for delay per connection retry.
+    private static boolean IS_AUTO_COMMIT = true;
+    private static ArrayBlockingQueue<Connection> availConnections = null;
+    private static ConcurrentSet<Connection> usingConnections = null;
 
     public static void Init() throws Exception
     {
@@ -20,8 +19,8 @@ public class Database{
         } catch (NumberFormatException ex) {
             POOL_SIZE = 10;
         }
-        availConnections = new LinkedList<Connection>();
-        usingConnections = new LinkedList<Connection>();
+        availConnections = new ArrayBlockingQueue<Connection>(POOL_SIZE);
+        usingConnections = new ConcurrentSet<Connection>();
 
         Class.forName("org.postgresql.Driver");
         Connection connection = null;
@@ -41,45 +40,54 @@ public class Database{
 
     protected static Connection newConnection() throws SQLException
     {
-        Connection connection = DriverManager.getConnection(Global.DB_STRING, Global.DB_USERNAME, Global.DB_PASSWORD);
+        Connection connection = null;
+        Boolean newConnectionCreated = false;
+
+        while(!newConnectionCreated)
+        {
+            try {
+                connection = DriverManager.getConnection(Global.DB_STRING, Global.DB_USERNAME, Global.DB_PASSWORD);
+                newConnectionCreated = true;
+            } catch (SQLException ex) {
+                try {
+                    synchronized (newConnectionCreated) {
+                        newConnectionCreated.wait(CONN_RETRY_MILLISECONDS);
+                    }
+                } catch (InterruptedException interruptEx) {
+                    interruptEx.printStackTrace();
+                    throw ex;
+                }
+            }
+        }
+        connection.setAutoCommit(IS_AUTO_COMMIT);
+        //connection = DriverManager.getConnection(Global.DB_STRING, Global.DB_USERNAME, Global.DB_PASSWORD);
         return connection;
     }
 
     public static Connection getConnection() throws SQLException
     {
         Connection connection = null;
-        if(availConnections.size() > 0)
-        {
-            connection = availConnections.getFirst();
-            availConnections.removeFirst();
-            usingConnections.add(connection);
-        }
-        else
-        {
+
+        connection = availConnections.poll();
+        if(connection==null)
             connection = newConnection();
-        }
+        else
+            usingConnections.add(connection);
         return connection;
     }
 
     public static void close(Connection connection) throws SQLException
     {
-        if(usingConnections.contains(connection))
+        synchronized (usingConnections)
         {
-            try {
-                connection.commit();
-            } catch (SQLException ex) {}
-            usingConnections.remove(connection);
-            availConnections.add(connection);
-        }
-        else if (availConnections.contains(connection))
-        {
-            try {
-                connection.commit();
-            } catch (SQLException ex) {}
-            connection.close();
+            if(usingConnections.hasElement(connection)) {
+                usingConnections.removeElement(connection);
+                availConnections.add(connection);
+            } else {
+                connection.close();
+            }
         }
 
-        return;
     }
 
     // На случай, если связь с БД оборвана. Рекомендуется вызывать при получении исключения SQLException.

@@ -1,7 +1,5 @@
 package uz.app.iTask.Models;
 
-import uz.app.Anno.BaseEntity;
-
 import java.util.Date;
 
 // Data-class of logs of user's actions.

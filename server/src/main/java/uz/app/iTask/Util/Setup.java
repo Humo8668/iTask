@@ -23,16 +23,12 @@ public class Setup implements ServletContextListener {
 
     public void contextInitialized(ServletContextEvent event) throws RuntimeException
     {
-        // Do your thing during webapp's startup.
-        //log.warn("contextInitialized");
-
-        //System.out.println(((Class<User>)User.class).getAnnotation(Schema.class).value());
         try {
             userRepo = new UserRepo();
-            taskRepo = new TaskRepo();
-            roleRepo = new RoleRepo();
-            deskRepo = new DeskRepo();
-            actionLogRepo = new ActionLogRepo();
+            //taskRepo = new TaskRepo();
+            //roleRepo = new RoleRepo();
+            //deskRepo = new DeskRepo();
+            //actionLogRepo = new ActionLogRepo();
 
             RouteProcessingService.AddModule(new UsersService());
         } catch (Exception ex) {

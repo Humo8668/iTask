@@ -36,8 +36,7 @@ public class UsersService extends BaseModule {
         User[] users;
         try {
             users = Setup.userRepo.getAll();
-        } catch (Exception ex) {
-            log.error("Error: " + ex.getMessage() + "\n");
+        } catch (SQLException ex) {
             ex.printStackTrace();
             res.sendError(500, "Error occurred: " + ex.getMessage());
             return;

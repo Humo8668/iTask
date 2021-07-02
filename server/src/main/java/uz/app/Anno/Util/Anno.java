@@ -5,13 +5,8 @@ import uz.app.Anno.Annotations.Column;
 import uz.app.Anno.Annotations.Id;
 import uz.app.Anno.Annotations.Schema;
 import uz.app.Anno.Annotations.Table;
-import uz.app.iTask.Repositories.*;
 
-import javax.servlet.ServletContext;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.Collection;
 import java.util.HashMap;

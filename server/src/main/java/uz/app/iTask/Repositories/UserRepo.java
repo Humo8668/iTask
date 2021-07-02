@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uz.app.Anno.Repository;
 import uz.app.iTask.Models.User;
-import uz.app.iTask.Util.Setup;
 
 public class UserRepo extends Repository<User> {
     static final Logger log = LoggerFactory.getLogger(UserRepo.class);

@@ -88,27 +88,34 @@ public class Repository<T extends BaseEntity> {
         if(connection == null)
             throw new SQLException("Couldn't connect to database.");
 
+        T[] res;
         LinkedList<T> entities = new LinkedList<T>();
         PreparedStatement stmt = connection.prepareStatement("SELECT * FROM " +
                 Anno.forEntity(ClassRef).getTableFullName());
-        ResultSet rs = stmt.executeQuery();
-        ResultSetMetaData rsmd = rs.getMetaData();
-        T entity;
-        while(rs.next())
-        {
-            entity = this.makeObject(rs, rsmd);
-            entities.add(entity);
+
+        try{
+            ResultSet rs = stmt.executeQuery();
+            ResultSetMetaData rsmd = rs.getMetaData();
+            T entity;
+            while(rs.next())
+            {
+                entity = this.makeObject(rs, rsmd);
+                entities.add(entity);
+            }
+
+            int i = 0;
+            res = (T[])Array.newInstance(ClassRef, entities.size());
+            for (T e: entities) {
+                if(i > entities.size())
+                    break;
+                res[i] = e;
+                i++;
+            }
+            rs.close();
+        } finally {
+            Database.close(connection);
         }
 
-        int i = 0;
-        T[] res = (T[])Array.newInstance(ClassRef, entities.size());
-        for (T e: entities) {
-            if(i > entities.size())
-                break;
-            res[i] = e;
-            i++;
-        }
-        Database.close(connection);
         return entities.toArray(res);
     };
 
@@ -126,18 +133,22 @@ public class Repository<T extends BaseEntity> {
                 .append(Anno.forEntity(ClassRef).getIdColumnName())
                 .append(" = ?");
 
-
         PreparedStatement stmt = connection.prepareStatement(query.toString());
         stmt.setLong(1, id);
-        ResultSet rs = stmt.executeQuery();
-        ResultSetMetaData rsmd = rs.getMetaData();
+        try {
+            ResultSet rs = stmt.executeQuery();
+            ResultSetMetaData rsmd = rs.getMetaData();
 
-        if(rs.next())   // If row exists
-            entity = this.makeObject(rs, rsmd);
-        else
-            entity = null;
+            if(rs.next())   // If row exists
+                entity = this.makeObject(rs, rsmd);
+            else
+                entity = null;
+            rs.close();
+            stmt.close();
+        } finally {
+            Database.close(connection);
+        }
 
-        Database.close(connection);
         return entity;
     }
 
@@ -196,8 +207,13 @@ public class Repository<T extends BaseEntity> {
 
             index++;
         }
-        int affectedRowsCtn = stmt.executeUpdate();
-        Database.close(connection);
+        int affectedRowsCtn = 0;
+        try {
+            affectedRowsCtn  = stmt.executeUpdate();
+            stmt.close();
+        } finally {
+            Database.close(connection);
+        }
 
         if(affectedRowsCtn == 0)
             throw new SQLException("SQL: No rows affected");
@@ -215,28 +231,32 @@ public class Repository<T extends BaseEntity> {
                 Anno.forEntity(ClassRef).getIdColumnName() +
                 " = ?");
         stmt.setLong(1, id);
-        stmt.executeUpdate();
+        try {
+            stmt.executeUpdate();
+            stmt.close();
+        } finally {
+            Database.close(connection);
+        }
 
-        Database.close(connection);
     }
 
-    public long count() throws Exception
+    public long count() throws SQLException
     {
         long res = 0;
         Connection connection = Database.getConnection();
         if(connection == null)
-            throw new Exception("Couldn't connect to database.");
+            throw new SQLException("Couldn't connect to database.");
 
         PreparedStatement stmt = connection.prepareStatement("SELECT count(*) FROM " +
                 Anno.forEntity(ClassRef).getTableFullName());
-        ResultSet rs = stmt.executeQuery();
-        rs.next();
         try {
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
             res = rs.getInt(1);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw new Exception("Couldn't retrieve result.");
-        } finally {
+            rs.close();
+            stmt.close();
+        }
+         finally {
             Database.close(connection);
         }
 

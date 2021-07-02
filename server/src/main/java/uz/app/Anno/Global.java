@@ -1,15 +1,7 @@
 package uz.app.Anno;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import uz.app.Anno.Util.Anno;
-import uz.app.iTask.Util.Setup;
-
 import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import java.io.*;
-import java.util.Properties;
 
 public class Global {
     public static String DB_STRING = "";

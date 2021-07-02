@@ -1,6 +1,5 @@
 package uz.app.iTask.Repositories;
 
-import uz.app.Anno.Repository;
 import uz.app.iTask.Models.Role;
 
 public class RoleRepo /*extends Repository<Role>*/ {
