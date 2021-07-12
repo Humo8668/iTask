@@ -3,7 +3,7 @@ package uz.app.Anno;
 import uz.app.Anno.Annotations.Schema;
 import uz.app.Anno.Annotations.Table;
 import uz.app.Anno.Util.Anno;
-import uz.app.Anno.Util.AnnoValidationException;
+import uz.app.Anno.Exceptions.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
@@ -84,7 +84,7 @@ public class Repository<T extends BaseEntity> {
 
     public T[] getAll() throws SQLException
     {
-        Connection connection = Database.getConnection();
+        Connection connection = PoolConnection.getConnection();
         if(connection == null)
             throw new SQLException("Couldn't connect to database.");
 
@@ -113,7 +113,7 @@ public class Repository<T extends BaseEntity> {
             }
             rs.close();
         } finally {
-            Database.close(connection);
+            PoolConnection.close(connection);
         }
 
         return entities.toArray(res);
@@ -121,7 +121,7 @@ public class Repository<T extends BaseEntity> {
 
     public T getById(long id) throws SQLException
     {
-        Connection connection = Database.getConnection();
+        Connection connection = PoolConnection.getConnection();
         if(connection == null)
             throw new SQLException("Couldn't connect to database.");
 
@@ -146,7 +146,7 @@ public class Repository<T extends BaseEntity> {
             rs.close();
             stmt.close();
         } finally {
-            Database.close(connection);
+            PoolConnection.close(connection);
         }
 
         return entity;
@@ -154,7 +154,7 @@ public class Repository<T extends BaseEntity> {
 
     public void save(T entity) throws SQLException, AnnoValidationException
     {
-        Connection connection = Database.getConnection();
+        Connection connection = PoolConnection.getConnection();
         if(connection == null)
             throw new SQLException("Couldn't connect to database.");
 
@@ -212,7 +212,7 @@ public class Repository<T extends BaseEntity> {
             affectedRowsCtn  = stmt.executeUpdate();
             stmt.close();
         } finally {
-            Database.close(connection);
+            PoolConnection.close(connection);
         }
 
         if(affectedRowsCtn == 0)
@@ -221,7 +221,7 @@ public class Repository<T extends BaseEntity> {
 
     public void delete(long id) throws SQLException
     {
-        Connection connection = Database.getConnection();
+        Connection connection = PoolConnection.getConnection();
         if(connection == null)
             throw new SQLException("Couldn't connect to database.");
 
@@ -235,7 +235,7 @@ public class Repository<T extends BaseEntity> {
             stmt.executeUpdate();
             stmt.close();
         } finally {
-            Database.close(connection);
+            PoolConnection.close(connection);
         }
 
     }
@@ -243,7 +243,7 @@ public class Repository<T extends BaseEntity> {
     public long count() throws SQLException
     {
         long res = 0;
-        Connection connection = Database.getConnection();
+        Connection connection = PoolConnection.getConnection();
         if(connection == null)
             throw new SQLException("Couldn't connect to database.");
 
@@ -256,13 +256,23 @@ public class Repository<T extends BaseEntity> {
             rs.close();
             stmt.close();
         }
-         finally {
-            Database.close(connection);
+        finally {
+            PoolConnection.close(connection);
         }
 
         return res;
     }
 
+    
+
+    
+    /**
+     * Instantiates target entity of repository, filling with data from given result-set 
+     * @param rs Result-set of query
+     * @param rsmd Meta-data of target entity.
+     * @return Instance of target entity
+     * @throws SQLException
+     */
     protected final T makeObject(ResultSet rs, ResultSetMetaData rsmd) throws SQLException
     {
         Object obj;

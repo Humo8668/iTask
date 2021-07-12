@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import uz.app.Anno.Annotations.Module;
 import uz.app.Anno.Annotations.Route;
 import uz.app.Anno.BaseModule;
-import uz.app.Anno.Util.AnnoValidationException;
+import uz.app.Anno.Exceptions.*;
 import uz.app.Anno.Util.HttpMethod;
 import uz.app.iTask.Models.User;
 import uz.app.iTask.Util.StdResp;

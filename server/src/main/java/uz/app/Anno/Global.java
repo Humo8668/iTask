@@ -22,10 +22,10 @@ public class Global {
         System.out.println("DB_PASSWORD = " + DB_PASSWORD);
         System.out.println("DB_CONN_POOL_SIZE = " + DB_CONN_POOL_SIZE);
 
-        Database.Init();
+        PoolConnection.Init();
         Anno.Init();
 
-        for (Repository repo: Repository.Instances) {
+        for (Repository<? extends BaseEntity> repo: Repository.Instances) {
             repo.Init();
         }
         isInit = true;

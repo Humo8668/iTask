@@ -12,4 +12,9 @@ public class UserRepo extends Repository<User> {
     {
         SetTargetEntity(User.class);
     }
+
+    public User getByLogin(String login)
+    {
+        return null;
+    }
 }

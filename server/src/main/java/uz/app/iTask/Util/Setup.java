@@ -2,8 +2,11 @@ package uz.app.iTask.Util;
 
 
 import org.slf4j.*;
+
+import uz.app.Anno.BaseModule;
 import uz.app.Anno.RouteProcessingService;
 import uz.app.iTask.Repositories.*;
+import uz.app.iTask.Services.AuthService;
 import uz.app.iTask.Services.UsersService;
 
 import javax.servlet.ServletContextEvent;
@@ -19,6 +22,9 @@ public class Setup implements ServletContextListener {
     public static DeskRepo deskRepo;
     public static ActionLogRepo actionLogRepo;
 
+    BaseModule usersService;
+    BaseModule authService;
+
     static final Logger log = LoggerFactory.getLogger(Setup.class);
 
     public void contextInitialized(ServletContextEvent event) throws RuntimeException
@@ -30,7 +36,8 @@ public class Setup implements ServletContextListener {
             //deskRepo = new DeskRepo();
             //actionLogRepo = new ActionLogRepo();
 
-            RouteProcessingService.AddModule(new UsersService());
+            usersService = new UsersService();
+            authService = new AuthService();
         } catch (Exception ex) {
             ex.printStackTrace();
             log.error("Service stopped due to error.");

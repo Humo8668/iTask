@@ -34,7 +34,10 @@ public class RouteProcessingService {
 
         Method[] methods = moduleClass.getDeclaredMethods();
         for (Method method: methods) {
-            Class[] paramTypes = method.getParameterTypes();
+            Annotation route = method.getAnnotation(Route.class);
+            if(route == null)
+                continue;
+            Class<?>[] paramTypes = method.getParameterTypes();
 
             if(paramTypes.length != 2)
                 throw new Exception("Method's arguments count is wrong.");
@@ -42,7 +45,7 @@ public class RouteProcessingService {
                     !paramTypes[1].equals(HttpServletResponse.class))
                 throw new Exception("Method's argument types are wrong.");
 
-            Annotation route = method.getAnnotation(Route.class);
+            
             HttpMethod httpMethod = ((Route) route).method();
             String path = ((Route) route).value();
 
@@ -59,6 +62,7 @@ public class RouteProcessingService {
                     new Pair<String, HttpMethod>(fullPath, httpMethod),
                     new Pair<BaseModule, Method>(module, method));
         }
+        module.moduleName = moduleName;
     }
 
     public static void process(String reqPath, HttpMethod httpMethod, HttpServletRequest req, HttpServletResponse res)
@@ -75,7 +79,7 @@ public class RouteProcessingService {
         Pair<BaseModule, Method> logicMethod;
         if(!RouteHashing.containsKey(routeInfo))
         {
-            //System.out.println("Route " + reqPath + " didn't caught by main servlet.");
+            System.out.println("Route " + reqPath + " didn't caught by main servlet.");
             res.sendError(404);
             return;
         }

@@ -2,7 +2,7 @@ package uz.app.iTask.Models;
 
 import uz.app.Anno.Annotations.*;
 import uz.app.Anno.BaseEntity;
-import uz.app.Anno.Util.AnnoValidationException;
+import uz.app.Anno.Exceptions.*;
 import uz.app.Anno.Util.Rgx;
 
 @Schema("public")

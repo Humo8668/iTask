@@ -13,6 +13,8 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <java.version>11</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
     <dependencies>
@@ -53,6 +55,12 @@
             <version>3.17.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>uz.app</groupId>
+            <artifactId>DataTable</artifactId>
+            <version>0.1</version>
+        </dependency>
+
 
     </dependencies>
 
@@ -62,6 +70,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
+                <version>3.3.1</version>
                 <configuration>
 					<warSourceDirectory>web</warSourceDirectory>
                 </configuration>
@@ -73,6 +82,28 @@
                 <version>3.8.1</version>
                 <configuration>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.5</version>
+                <configuration>
+                    <groupId>uz.app</groupId>
+                    <artifactId>DataTable</artifactId>
+                    <version>0.1</version>
+                    <packaging>jar</packaging>
+                    <file>${basedir}/lib/DataTable.jar</file>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-jar-lib</id>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <phase>validate</phase>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

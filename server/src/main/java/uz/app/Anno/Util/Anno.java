@@ -42,7 +42,7 @@ public class Anno {
             DatabaseMetaData metadata;
             ResultSet rs;
             try {
-                conn = Database.getConnection();
+                conn = PoolConnection.getConnection();
                 metadata = conn.getMetaData();
                 rs = metadata.getColumns(null, SCHEMA_NAME, TABLE_NAME, "%");
                 while(rs.next()) {
@@ -60,7 +60,7 @@ public class Anno {
 
                     ColumnType.put(colName, rs.getInt("DATA_TYPE"));
                 }
-                Database.close(conn);
+                PoolConnection.close(conn);
             } catch (SQLException ex) {
                 ex.printStackTrace();
                 return; // Couldn't connect to database. Refreshing stopped.
@@ -106,6 +106,11 @@ public class Anno {
         public Collection<String> getAutoincrement()
         {
             return new LinkedList<>(AutoincrementColumns);
+        }
+
+        public Collection<String> getColumnsNames()
+        {
+            return Naming.values();
         }
     }
 

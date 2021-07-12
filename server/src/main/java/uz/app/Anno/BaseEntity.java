@@ -1,6 +1,6 @@
 package uz.app.Anno;
 
-import uz.app.Anno.Util.AnnoValidationException;
+import uz.app.Anno.Exceptions.*;
 
 public abstract class BaseEntity {
     public abstract boolean isValid();
