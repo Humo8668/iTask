@@ -1,8 +1,10 @@
+d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\Anno\PoolConnection.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\iTask\Models\Task.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\iTask\Services\UsersService.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\Anno\Annotations\Route.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\Anno\Annotations\Schema.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\iTask\Models\User.java
+d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\Anno\Exceptions\AnnoValidationException.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\iTask\Util\StdResp.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\Anno\Annotations\Table.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\Anno\MainServlet.java
@@ -30,7 +32,6 @@ d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\Anno\Util\Rgx.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\iTask\Filters\UsersServiceFilter.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\iTask\Util\Setup.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\iTask\Models\ActionLog.java
-d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\Anno\Util\AnnoValidationException.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\Anno\Util\HttpMethod.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\iTask\Services\AuthService.java
 d:\Projects\PetProjects\iTask\server\src\main\java\uz\app\Anno\Global.java

@@ -25,6 +25,8 @@ public class Global {
         PoolConnection.Init();
         Anno.Init();
 
+        //Database.setFunction("getGreeting").execute(PoolConnection.getConnection());
+
         for (Repository<? extends BaseEntity> repo: Repository.Instances) {
             repo.Init();
         }

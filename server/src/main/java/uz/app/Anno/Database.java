@@ -5,10 +5,13 @@ import uz.app.DataTable.DataTable;
 import uz.app.Anno.PoolConnection;
 
 import java.sql.*;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public class Database{
+
+    public enum ArgumentMode { IN, OUT, INOUT }
 
     public static DataTable getTable(String tableName, String schemaName, String columns, String where, String order) throws SQLException
     {
@@ -61,104 +64,152 @@ public class Database{
     }
 
 
-    public static void execProcedure(String procedureName, Object[] args) throws SQLException, SQLTimeoutException
+    public static class Function
     {
-        // THERE ARE IN-OUT PARAMS!!!!
-        
-        /*Connection conn = PoolConnection.getConnection();
-        if(conn == null) throw new SQLException("Couldn't connect to database. Got null instead of connection.");
+        protected CallableStatement statement;
+        protected Integer argCounter;
+        protected StringBuilder SqlStatement;
+        protected HashMap<Integer, Object> argVals;
+        protected HashMap<Integer, ArgumentMode> argModes;
+        protected HashMap<Integer, Integer> argTypes;
 
-        String sqlStatement = procedureName + "(";
-        for(int i = 0; i < args.length; i++)
-            sqlStatement += "?,";
-        sqlStatement = sqlStatement.substring(0, sqlStatement.length()-1);
-        CallableStatement cs = conn.prepareCall("call " + sqlStatement);
+        private Function() {}
 
-        for(int parameterIndex = 0; parameterIndex < args.length; parameterIndex++)
-            cs.setObject(parameterIndex, args[parameterIndex]);
-        
-        cs.execute();*/
+        public Function(String NameOfFunc)
+        {
+            this.SqlStatement = new StringBuilder("{? = call " + NameOfFunc + "(");
+            this.argCounter = 1;        //  We have one argument for query yet - result of function.
+            this.statement = null;
 
-        return;
-    }
-    public static void execProcedure(String procedureName, Object arg1, Object arg2, Object arg3, Object arg4)
-        throws SQLException, SQLTimeoutException
-    {
-        Object[] args = new Object[4];
-        args[0] = arg1; args[1] = arg2;
-        args[2] = arg3; args[3] = arg4;
-        execProcedure(procedureName, args);
-    }
-    public static void execProcedure(String procedureName, Object arg1, Object arg2, Object arg3)
-        throws SQLException, SQLTimeoutException
-    {
-        Object[] args = new Object[4];
-        args[0] = arg1; args[1] = arg2;
-        args[2] = arg3;
-        execProcedure(procedureName, args);
-    }
-    public static void execProcedure(String procedureName, Object arg1, Object arg2)
-        throws SQLException, SQLTimeoutException
-    {
-        Object[] args = new Object[4];
-        args[0] = arg1; args[1] = arg2;
-        execProcedure(procedureName, args);
-    }
-    public static void execProcedure(String procedureName, Object arg1)
-        throws SQLException, SQLTimeoutException
-    {
-        Object[] args = new Object[4];
-        args[0] = arg1;
-        execProcedure(procedureName, args);
+            this.argVals = new HashMap<Integer, Object>();
+            this.argModes = new HashMap<Integer, ArgumentMode>();
+        }
+
+        public Function argInt(Integer argument, ArgumentMode argMode) throws SQLException
+        {
+            this.argVals.put(argCounter, argument);
+            this.argModes.put(argCounter, argMode);
+            this.argTypes.put(argCounter, java.sql.Types.INTEGER);
+            this.argCounter++;
+            this.SqlStatement.append("?,");
+            return this;
+        }
+
+        public Function argString(String argument, ArgumentMode argMode) throws SQLException
+        {
+            this.argVals.put(argCounter, argument);
+            this.argModes.put(argCounter, argMode);
+            this.argTypes.put(argCounter, java.sql.Types.VARCHAR);
+            this.argCounter++;
+            this.SqlStatement.append("?,");
+            return this;
+        }
+
+        public Function argFloat(Float argument, ArgumentMode argMode) throws SQLException
+        {
+            this.argVals.put(argCounter, argument);
+            this.argModes.put(argCounter, argMode);
+            this.argTypes.put(argCounter, java.sql.Types.FLOAT);
+            this.argCounter++;
+            this.SqlStatement.append("?,");
+            return this;
+        }
+
+        public Function argBoolean(Boolean argument, ArgumentMode argMode) throws SQLException
+        {
+            this.argVals.put(argCounter, argument);
+            this.argModes.put(argCounter, argMode);
+            this.argTypes.put(argCounter, java.sql.Types.BOOLEAN);
+            this.argCounter++;
+            this.SqlStatement.append("?,");
+            return this;
+        }
+
+        public Function argDate(Date argument, ArgumentMode argMode) throws SQLException
+        {
+            this.argVals.put(argCounter, argument);
+            this.argModes.put(argCounter, argMode);
+            this.argTypes.put(argCounter, java.sql.Types.DATE);
+            this.argCounter++;
+            this.SqlStatement.append("?,");
+            return this;
+        }
+
+        public Object execute(Connection conn) throws SQLException
+        {
+            this.SqlStatement.delete(this.SqlStatement.length()-1, this.SqlStatement.length()); // remove last comma
+            this.SqlStatement.append(") }");
+            this.statement = conn.prepareCall(this.SqlStatement.toString());
+
+            Object value;
+            Integer sqlType;
+            ArgumentMode argMode;
+            for(Integer argPos : this.argVals.keySet())
+            {
+                value = this.argVals.get(argPos);
+                sqlType = this.argTypes.get(argPos);
+                argMode = this.argModes.get(argPos);
+
+                switch(argMode)
+                {
+                    case OUT:
+                        statement.registerOutParameter(argPos, sqlType);
+                        break;
+                    case INOUT:
+                        statement.registerOutParameter(argPos, sqlType);
+                        statement.setObject(argPos, value, sqlType);
+                        break;
+                    case IN:
+                        statement.setObject(argPos, value, sqlType);
+                        break;
+                }
+            }
+            this.statement.execute();
+            return this.statement.getObject(1);
+        }
+
+        public Integer getInt(int position) throws SQLException {
+            return this.statement.getInt(position);
+        } 
+        public String getString(int position) throws SQLException {
+            return this.statement.getString(position);
+        }
+        public Float getFloat(int position) throws SQLException {
+            return this.statement.getFloat(position);
+        }
+        public Boolean getBoolean(int position) throws SQLException {
+            return this.statement.getBoolean(position);
+        }
+        public Date getDate(int position) throws SQLException {
+            return this.statement.getDate(position);
+        }
     }
 
+    public static class Procedure extends Function
+    {
+        public Procedure(String NameOfProcedure) {
+            this.SqlStatement = new StringBuilder("{ call " + NameOfProcedure + "(");
+            this.argCounter = 0;
+            this.statement = null;
 
-    public static void execFunction(String functionName, Object[] args) throws SQLException, SQLTimeoutException
-    {
-        /*Connection conn = PoolConnection.getConnection();
-        if(conn == null) throw new SQLException("Couldn't connect to database. Got null instead of connection.");
+            this.argVals = new HashMap<Integer, Object>();
+            this.argModes = new HashMap<Integer, ArgumentMode>();
+        }
 
-        String sqlStatement = functionName + "(";
-        for(int i = 0; i < args.length; i++)
-            sqlStatement += "?,";
-        sqlStatement = sqlStatement.substring(0, sqlStatement.length()-1);
-        CallableStatement cs = conn.prepareCall("SELECT " + sqlStatement);
-        cs.
-        for(int parameterIndex = 0; parameterIndex < args.length; parameterIndex++)
-            cs.setObject(parameterIndex, args[parameterIndex]);
-        
-        cs.execute();*/
+        @Override
+        public Object execute(Connection conn) throws SQLException {
+            super.execute(conn);
+            return null;
+        }
+    }
 
-        return;
-    }
-    public static void execFunction(String functionName, Object arg1, Object arg2, Object arg3, Object arg4)
-        throws SQLException, SQLTimeoutException
+    public static Function setFunction(String funcName)
     {
-        Object[] args = new Object[4];
-        args[0] = arg1; args[1] = arg2;
-        args[2] = arg3; args[3] = arg4;
-        execProcedure(functionName, args);
+        return new Function(funcName);
     }
-    public static void execFunction(String functionName, Object arg1, Object arg2, Object arg3)
-        throws SQLException, SQLTimeoutException
+
+    public static Procedure setProcedure(String procName)
     {
-        Object[] args = new Object[4];
-        args[0] = arg1; args[1] = arg2;
-        args[2] = arg3;
-        execProcedure(functionName, args);
-    }
-    public static void execFunction(String functionName, Object arg1, Object arg2)
-        throws SQLException, SQLTimeoutException
-    {
-        Object[] args = new Object[4];
-        args[0] = arg1; args[1] = arg2;
-        execProcedure(functionName, args);
-    }
-    public static void execFunction(String functionName, Object arg1)
-        throws SQLException, SQLTimeoutException
-    {
-        Object[] args = new Object[4];
-        args[0] = arg1;
-        execProcedure(functionName, args);
+        return new Procedure(procName);
     }
 }
